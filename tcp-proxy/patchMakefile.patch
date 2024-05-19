@@ -1,0 +1,11 @@
+--- Makefile.old	2024-05-12 15:11:22.725016500 +0200
++++ Makefile	2024-04-28 10:14:35.528990921 +0200
+@@ -3,7 +3,7 @@
+ INCLUDES?=-I../ext/prometheus-cpp-lite-1.0/core/include  -I../ext/prometheus-cpp-lite-1.0/simpleapi/include
+ 
+ all:
+-	$(CXX) -O3 -fno-rtti $(INCLUDES) -std=c++11 -frtti  -o tcp-proxy tcp-proxy.cpp ../node/Metrics.cpp
++	$(CXX) -O3 -fno-rtti $(INCLUDES) -std=c++11 -pthread -frtti  -o tcp-proxy tcp-proxy.cpp ../node/Metrics.cpp
+ 
+ clean:
+ 	rm -f *.o tcp-proxy *.dSYM
