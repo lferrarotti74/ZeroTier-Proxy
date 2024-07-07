@@ -1,6 +1,6 @@
 # vim: ft=dockerfile
 
-FROM debian:stable-backports as stage
+FROM debian:trixie-backports as stage
 
 ARG VERSION=1.12.0 //Default value provided
 
@@ -18,7 +18,7 @@ RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     fi
 RUN cp tcp-proxy /usr/sbin
 
-FROM debian:stable-backports
+FROM debian:trixie-backports
 
 ARG VERSION=1.12.0 //Default value provided
 
