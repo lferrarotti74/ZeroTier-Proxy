@@ -4,8 +4,8 @@ FROM debian:stable-slim as stage
 
 ARG VERSION=1.12.0 //Default value provided
 
-RUN apt-get update -qq && apt-get -qq install make clang git -y
-RUN git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
+RUN apt-get update -qq && apt-get upgrade -qq && apt-get -qq install make clang git -y \
+    && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
 
 COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
@@ -24,12 +24,10 @@ ARG VERSION=1.12.0 //Default value provided
 
 COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
-RUN echo "${VERSION}" > /etc/zerotier-version
-RUN rm -rf /var/lib/zerotier-one
-
-
-RUN apt-get -qq update
-RUN apt-get -qq install iproute2 net-tools fping 2ping iputils-ping iputils-arping procps jq netcat-openbsd -y
+RUN echo "${VERSION}" > /etc/zerotier-version \
+    && rm -rf /var/lib/zerotier-one \
+    apt-get -qq update && apt-get upgrade -qq \
+    && apt-get -qq install iproute2 net-tools fping 2ping iputils-ping iputils-arping procps jq netcat-openbsd -y
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/healthcheck.sh /healthcheck.sh
