@@ -26,7 +26,7 @@ COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
 RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
-    apt-get -qq update && apt-get upgrade -qq \
+    && apt-get -qq update && apt-get upgrade -qq \
     && apt-get -qq install iproute2 net-tools fping 2ping iputils-ping iputils-arping procps jq netcat-openbsd -y
 
 COPY scripts/entrypoint.sh /entrypoint.sh
