@@ -20,7 +20,6 @@ RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     else \
         /usr/bin/make -j$(nproc) ; \
     fi
-#RUN cp tcp-proxy /usr/sbin
 
 FROM debian:trixie-backports
 #FROM alpine:latest
