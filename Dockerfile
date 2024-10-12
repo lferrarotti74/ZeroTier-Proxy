@@ -1,28 +1,28 @@
 # vim: ft=dockerfile
 
-FROM debian:trixie-backports AS stage
-#FROM alpine:latest AS stage
+#FROM debian:trixie-backports AS stage
+FROM alpine:latest AS stage
 
 ARG VERSION=1.12.0 //Default value provided
 
-RUN apt-get update -qq && apt-get upgrade -qq && apt-get -qq install make clang git -y \
+#RUN apt-get update -qq && apt-get upgrade -qq && apt-get -qq install make clang git -y \
+#    && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
+RUN apk update && apk upgrade \
+    && apk add --update alpine-sdk linux-headers make clang git \
     && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
-# RUN apk update && apk upgrade \
-#     && apk add --update alpine-sdk linux-headers make clang git \
-#     && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
 
 COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
 
 RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     if [ "$VER" -lt "1140" ]; then \
-        patch --verbose -u Makefile -i patchMakefile.patch ; /usr/bin/make -j$(nproc) ; \
+        patch --verbose -u Makefile -i patchMakefile.patch ; sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
     else \
-        /usr/bin/make -j$(nproc) ; \
+        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
     fi
 
-FROM debian:trixie-backports
-#FROM alpine:latest
+#FROM debian:trixie-backports
+FROM alpine:latest
 
 ARG VERSION=1.12.0 //Default value provided
 
@@ -34,14 +34,14 @@ LABEL org.opencontainers.image.title="zerotier" \
 
 COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
+#RUN echo "${VERSION}" > /etc/zerotier-version \
+#    && rm -rf /var/lib/zerotier-one \
+#    && apt-get -qq update && apt-get upgrade -qq \
+#    && apt-get -qq install iproute2 net-tools fping 2ping iputils-ping iputils-arping procps jq netcat-openbsd -y
 RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
-    && apt-get -qq update && apt-get upgrade -qq \
-    && apt-get -qq install iproute2 net-tools fping 2ping iputils-ping iputils-arping procps jq netcat-openbsd -y
-# RUN echo "${VERSION}" > /etc/zerotier-version \
-#     && rm -rf /var/lib/zerotier-one \
-#     && apk update && apk upgrade \
-#     && apk add --update iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd
+    && apk update && apk upgrade \
+    && apk add --update iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd musl libstdc++ libgcc
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/healthcheck.sh /healthcheck.sh
