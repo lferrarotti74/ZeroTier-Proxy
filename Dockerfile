@@ -33,18 +33,22 @@ COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
     && apk --no-cache update && apk --no-cache upgrade \
-    && apk --no-cache --update add iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc
+    && apk --no-cache --update add iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc \
+    && addgroup -S zerotier && adduser -S zerotier -G zerotier -h /var/lib/zerotier-one -g "zerotier" \
+    && echo "export HISTFILE=/dev/null" >> /etc/profile
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/healthcheck.sh /healthcheck.sh
 
 RUN chmod 755 /entrypoint.sh ; chmod 755 /healthcheck.sh
 
+EXPOSE 443/tcp
+USER zerotier
+
 # Define a custom healthcheck command
 HEALTHCHECK --interval=60s --timeout=5s --retries=3 CMD [ "/healthcheck.sh" ]
 
-EXPOSE 443/tcp
-
+# Start the entrypoint script for the container image
 ENTRYPOINT ["/entrypoint.sh"]
 
 CMD []
