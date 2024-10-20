@@ -4,8 +4,8 @@ FROM alpine:latest AS stage
 
 ARG VERSION=1.12.0 //Default value provided
 
-RUN apk update && apk upgrade \
-    && apk add --update alpine-sdk linux-headers make clang git \
+RUN apk --no-cache update && apk --no-cache upgrade \
+    && apk --no-cache --update add alpine-sdk linux-headers make clang git \
     && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
 
@@ -32,8 +32,8 @@ COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
 RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
-    && apk update && apk upgrade \
-    && apk add --update iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc
+    && apk --no-cache update && apk --no-cache upgrade \
+    && apk --no-cache --update add iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/healthcheck.sh /healthcheck.sh
