@@ -10,12 +10,13 @@ RUN apk --no-cache update && apk --no-cache upgrade \
 WORKDIR /ZeroTierOne/tcp-proxy
 
 COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
+COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
 
 RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     if [ "$VER" -lt "1140" ]; then \
         patch --verbose -u Makefile -i patchMakefile.patch ; sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
     else \
-        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
+        patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch ; sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
     fi
 
 FROM alpine:latest
