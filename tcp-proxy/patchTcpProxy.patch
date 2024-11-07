@@ -1,0 +1,147 @@
+--- tcp-proxy-orig.cpp	2024-11-07 09:33:31.049881242 +0100
++++ tcp-proxy.cpp	2024-11-07 13:41:08.009320279 +0100
+@@ -25,6 +25,12 @@
+ #define __FD_SETSIZE 1048576
+ #undef FD_SETSIZE
+ #define FD_SETSIZE 1048576
++#include <fstream>
++#include <iostream>
++#include <bits/stdc++.h>
++#include <stdarg.h>
++#include "../ext/nlohmann/json.hpp"
++using json = nlohmann::json;
+ #endif
+ 
+ #include <stdio.h>
+@@ -46,10 +52,59 @@
+ #include "../node/Metrics.hpp"
+ 
+ #define ZT_TCP_PROXY_CONNECTION_TIMEOUT_SECONDS 300
+-#define ZT_TCP_PROXY_TCP_PORT 443
++
++int ZT_TCP_PROXY_TCP_PORT;
+ 
+ using namespace ZeroTier;
+ 
++// declaring datetime function
++void datetime_fprintf(FILE *stream, const char *fmt, ...) __attribute__((format(printf,2,3)));
++
++void datetime_fprintf(FILE *stream, const char *fmt, ...)
++{
++	va_list ap;
++	time_t timer;
++	struct tm * timeinfo;
++	char buffer [100];
++	time(&timer);
++	timeinfo = localtime (&timer);
++	strftime (buffer,100,"[%c] ",timeinfo);
++	fprintf(stream, "%s", buffer);
++	va_start(ap, fmt);
++	vfprintf(stream, fmt, ap);
++	va_end(ap);
++}
++#define datetime_printf(...)	datetime_fprintf(stdout, __VA_ARGS__)
++
++// TCP_PORT namespace
++namespace TCP_PORT
++
++{
++  void func()
++
++  {
++	// Path to the directory and config file
++	std::string dir = "/var/lib/zerotier-one/";
++	std::string filePath = dir + "local.conf";
++    std::ifstream config(filePath);
++	
++	if (!config)
++	{
++		datetime_printf("- No config file present.\n");
++		datetime_printf("- Switching to default port, Server listening on TCP port : 443\n");
++		ZT_TCP_PROXY_TCP_PORT = 443;
++	} else {
++		nlohmann::json j;
++		config >> j;
++		std::uint64_t tcpPort = j["settings"]["tcpPort"];
++		ZT_TCP_PROXY_TCP_PORT = tcpPort;
++		datetime_printf("- Config file present.\n");
++		datetime_printf("- Server listening on TCP port : %d\n",ZT_TCP_PROXY_TCP_PORT);
++	}
++  }
++}
++
++
+ /*
+  * ZeroTier TCP Proxy Server
+  *
+@@ -157,7 +212,7 @@
+ 					c.tcpWriteBuf[c.tcpWritePtr++] = ((const char *)data)[i];
+ 			}
+ 
+-			printf("<< UDP %s:%d -> %.16llx\n",inet_ntoa(reinterpret_cast<const struct sockaddr_in *>(from)->sin_addr),(int)ntohs(reinterpret_cast<const struct sockaddr_in *>(from)->sin_port),(unsigned long long)&c);
++			datetime_printf("<< UDP %s:%d -> %.16llx\n",inet_ntoa(reinterpret_cast<const struct sockaddr_in *>(from)->sin_addr),(int)ntohs(reinterpret_cast<const struct sockaddr_in *>(from)->sin_port),(unsigned long long)&c);
+ 		}
+ 	}
+ 
+@@ -173,7 +228,7 @@
+ 		if (!udp) {
+ 			phy->close(sockN);
+ 			clients.erase(sockN);
+-			printf("** TCP rejected, no more UDP ports to assign\n");
++			datetime_printf("** TCP rejected, no more UDP ports to assign\n");
+ 			return;
+ 		}
+ 		c.tcpWritePtr = 0;
+@@ -183,7 +238,7 @@
+ 		c.lastActivity = time((time_t *)0);
+ 		c.newVersion = false;
+ 		*uptrN = (void *)&c;
+-		printf("<< TCP from %s -> %.16llx\n",inet_ntoa(reinterpret_cast<const struct sockaddr_in *>(from)->sin_addr),(unsigned long long)&c);
++		datetime_printf("<< TCP from %s -> %.16llx\n",inet_ntoa(reinterpret_cast<const struct sockaddr_in *>(from)->sin_addr),(unsigned long long)&c);
+ 	}
+ 
+ 	void phyOnTcpClose(PhySocket *sock,void **uptr)
+@@ -193,7 +248,7 @@
+ 		Client &c = *((Client *)*uptr);
+ 		phy->close(c.udp);
+ 		clients.erase(sock);
+-		printf("** TCP %.16llx closed\n",(unsigned long long)*uptr);
++		datetime_printf("** TCP %.16llx closed\n",(unsigned long long)*uptr);
+ 	}
+ 
+ 	void phyOnTcpData(PhySocket *sock,void **uptr,void *data,unsigned long len)
+@@ -214,7 +269,7 @@
+ 					if (mlen == 4) {
+ 						// Right now just sending this means the client is 'new enough' for the IP header
+ 						c.newVersion = true;
+-						printf("<< TCP %.16llx HELLO\n",(unsigned long long)*uptr);
++						datetime_printf("<< TCP %.16llx HELLO\n",(unsigned long long)*uptr);
+ 					} else if (mlen >= 7) {
+ 						char *payload = c.tcpReadBuf + 5;
+ 						unsigned long payloadLen = mlen;
+@@ -245,7 +300,7 @@
+ 						// Note: we do not relay to privileged ports... just an abuse prevention rule.
+ 						if ((ntohs(dest.sin_port) > 1024)&&(payloadLen >= 16)) {
+ 							phy->udpSend(c.udp,(const struct sockaddr *)&dest,payload,payloadLen);
+-							printf(">> TCP %.16llx to %s:%d\n",(unsigned long long)*uptr,inet_ntoa(dest.sin_addr),(int)ntohs(dest.sin_port));
++							datetime_printf(">> TCP %.16llx to %s:%d\n",(unsigned long long)*uptr,inet_ntoa(dest.sin_addr),(int)ntohs(dest.sin_port));
+ 						}
+ 					}
+ 
+@@ -285,6 +340,7 @@
+ 
+ int main(int argc,char **argv)
+ {
++	TCP_PORT :: func();
+ 	signal(SIGPIPE,SIG_IGN);
+ 	signal(SIGHUP,SIG_IGN);
+ 	srand(time((time_t *)0));
+@@ -300,7 +356,7 @@
+ 		laddr.sin_family = AF_INET;
+ 		laddr.sin_port = htons(ZT_TCP_PROXY_TCP_PORT);
+ 		if (!phy.tcpListen((const struct sockaddr *)&laddr)) {
+-			fprintf(stderr,"%s: fatal error: unable to bind TCP port %d\n",argv[0],ZT_TCP_PROXY_TCP_PORT);
++			datetime_printf("%s: fatal error: unable to bind TCP port %d\n",argv[0],ZT_TCP_PROXY_TCP_PORT);
+ 			return 1;
+ 		}
+ 	}
