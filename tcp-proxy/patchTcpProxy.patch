@@ -35,8 +35,8 @@
 +	time(&timer);
 +	timeinfo = localtime (&timer);
 +	strftime (buffer,100,"[%c] ",timeinfo);
-+	fprintf(stream, "%s", buffer);
 +	va_start(ap, fmt);
++	fprintf(stream, "%s", buffer);
 +	vfprintf(stream, fmt, ap);
 +	va_end(ap);
 +}
