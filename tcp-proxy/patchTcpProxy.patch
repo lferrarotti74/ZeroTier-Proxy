@@ -40,7 +40,7 @@
 +	vfprintf(stream, fmt, ap);
 +	va_end(ap);
 +}
-+#define datetime_printf(...)	datetime_fprintf(stdout, __VA_ARGS__)
++#define datetime_printf(...)	datetime_fprintf(stderr, __VA_ARGS__)
 +
 +// TCP_PORT namespace
 +namespace TCP_PORT
