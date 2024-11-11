@@ -1,12 +1,9 @@
 name: Docker
 
 on:
-  push:
-    tags: [ "*" ]
-    branches:
-      - 'main'
   pull_request:
-    branches: [ "**" ]
+    branches:
+      - dev
 
 env:
   REGISTRY: docker.io
@@ -17,6 +14,7 @@ env:
 
 jobs:
   build:
+    if: github.actor!= 'dependabot[bot]'   # ignore the pull request which comes from user dependabot.
 
     runs-on: ubuntu-latest
     permissions:
@@ -73,7 +71,8 @@ jobs:
         with:
           context: .
           build-args: VERSION=${{ env.ZEROTIERPROXY_VERSION }}
-          push: true
+          push: false
+          load: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
