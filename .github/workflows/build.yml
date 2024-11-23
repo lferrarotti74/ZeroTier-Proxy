@@ -1,11 +1,32 @@
-name: ci
+name: Build release image
 
 on:
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'Log level'
+        required: true
+        default: 'information'
+        type: choice
+        options:
+          - information
+          - debug
+          - warning
+          - critical
+      tags:
+        description: 'Purpose of Run This Workflow?'
+        required: true
+        type: string
   push:
     branches:
       - "main"
 
 jobs:
+  print-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print the purpose of run
+        run: echo  ${{ inputs.tags }} purpose
   docker:
     runs-on: ubuntu-latest
     steps:
