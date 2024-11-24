@@ -14,7 +14,7 @@ env:
 
 jobs:
   build:
-    if: github.actor!= 'dependabot[bot]'   # ignore the pull request which comes from user dependabot.
+    # if: github.actor!= 'dependabot[bot]'   # ignore the pull request which comes from user dependabot.
 
     runs-on: ubuntu-latest
     permissions:
