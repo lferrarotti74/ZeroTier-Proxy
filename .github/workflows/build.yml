@@ -20,6 +20,8 @@ on:
   push:
     branches:
       - "main"
+    paths-ignore:
+      - '.github/workflows/**'
 
 jobs:
   print-tag:
