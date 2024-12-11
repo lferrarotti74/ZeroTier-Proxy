@@ -6,6 +6,8 @@ on:
       - main
     paths-ignore:
       - '.github/workflows/**'
+      - 'README.md'
+      - 'LICENSE'
 
 env:
   REGISTRY: docker.io
