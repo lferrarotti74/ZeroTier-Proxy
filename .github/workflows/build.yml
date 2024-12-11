@@ -22,6 +22,8 @@ on:
       - "main"
     paths-ignore:
       - '.github/workflows/**'
+      - 'README.md'
+      - 'LICENSE'
 
 jobs:
   print-tag:
