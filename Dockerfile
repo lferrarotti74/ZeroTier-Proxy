@@ -2,10 +2,14 @@
 
 FROM alpine:latest AS stage
 
+# Define an optional build argument to invalidate cache
+ARG CACHEBUST=1
+
 ARG VERSION=1.12.0 //Default value provided
 
 RUN apk --no-cache update && apk --no-cache upgrade \
     && apk --no-cache --update add alpine-sdk linux-headers make clang git \
+    && rm -rf /var/cache/apk/* \
     && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
 
@@ -21,6 +25,9 @@ RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
 
 FROM alpine:latest
 
+# Define an optional build argument to invalidate cache
+ARG CACHEBUST=1
+
 ARG VERSION=1.12.0 //Default value provided
 
 LABEL org.opencontainers.image.title="zerotier-proxy" \
@@ -35,6 +42,7 @@ RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
     && apk --no-cache update && apk --no-cache upgrade \
     && apk --no-cache --update add iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc \
+    && rm -rf /var/cache/apk/* \
     && addgroup -S zerotier && adduser -S zerotier -G zerotier -h /var/lib/zerotier-one -g "zerotier" \
     && echo "export HISTFILE=/dev/null" >> /etc/profile
 
