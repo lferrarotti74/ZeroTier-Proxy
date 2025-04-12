@@ -24,47 +24,78 @@ on:
       - 'README.md'
       - 'LICENSE'
 
+env:
+  REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy
+
 jobs:
   print-tag:
     runs-on: ubuntu-latest
     steps:
       - name: Print the purpose of run
-        run: echo  ${{ inputs.tags }} purpose
-  docker:
+        run: |
+          echo "Purpose of Run: ${{ inputs.tags }}"
+        
+  build:
     runs-on: ubuntu-latest
+    # Since your original workflow only uses linux/amd64, I've simplified the matrix
+    # If you want to add more architectures in the future, you can expand this
+    strategy:
+      matrix:
+        platform: [
+          {name: "linux/amd64", tag: "amd64"}
+        ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
       - name: Set Environment
         uses: c-py/action-dotenv-to-setenv@v5
         id: source-env
         with:
-          env-file: env/.env  
+          env-file: env/.env
+          
       - name: Echo Zerotier Proxy Version from env file
         run: | 
           echo ${{ steps.source-env.outputs.zerotierproxy_version }} >> "$GITHUB_ENV"
+        
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform.name }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+        
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_IMAGE }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ env.ZEROTIERPROXY_VERSION }}
+   
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3.4.0
+        uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.10.0
+          
+      - name: Set up QEMU for Multi-Arch Builds
+        uses: docker/setup-qemu-action@v3
         with:
-          version: "lab:latest"
-          driver: cloud
-          endpoint: "lferrarotti74/bugbuster-builder"
-      - name: Build and push
-        uses: docker/build-push-action@v6.15.0
+          platforms: ${{ matrix.platform.name }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        
+      - name: Build and Push
+        uses: docker/build-push-action@v6
         with:
           context: .
+          platforms: ${{ matrix.platform.name }}
           build-args: VERSION=${{ env.ZEROTIERPROXY_VERSION }}
-          platforms: linux/amd64
-          tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy:${{ env.ZEROTIERPROXY_VERSION }}
-            ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy:latest
-          sbom: true
+          labels: ${{ steps.meta.outputs.labels }}
           provenance: mode=max
-          # For pull requests, export results to the build cache.
-          # Otherwise, push to a registry.
-          outputs: ${{ github.event_name == 'pull_request' && 'type=cacheonly' || 'type=registry,push=true' }}
+          sbom: true
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }}
+            ${{ env.REGISTRY_IMAGE }}:latest
