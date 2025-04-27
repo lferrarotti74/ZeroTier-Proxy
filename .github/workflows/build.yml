@@ -1,5 +1,10 @@
 name: Build release image
 
+# Add permissions block
+permissions:
+  contents: read
+  packages: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -23,79 +28,214 @@ on:
     paths-ignore:
       - 'README.md'
       - 'LICENSE'
-
+      
 env:
   REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy
+  GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/zerotier-proxy
 
 jobs:
-  print-tag:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Print the purpose of run
-        run: |
-          echo "Purpose of Run: ${{ inputs.tags }}"
-        
   build:
     runs-on: ubuntu-latest
-    # Since your original workflow only uses linux/amd64, I've simplified the matrix
-    # If you want to add more architectures in the future, you can expand this
     strategy:
       matrix:
         platform: [
           {name: "linux/amd64", tag: "amd64"}
+          #{name: "linux/arm64/v8", tag: "arm64v8"},
+          #{name: "linux/arm/v7", tag: "arm32v7"}
+          # Uncomment additional architectures as needed
+          # {name: "linux/i386", tag: "i386"},
+          # {name: "linux/arm/v6", tag: "arm32v6"},
+          # {name: "linux/ppc64le", tag: "ppc64le"},
+          # {name: "linux/riscv64", tag: "riscv64"},
+          # {name: "linux/s390x", tag: "s390x"}
         ]
+    steps:
+      - name: Print the Purpose of Run
+        run: |
+          echo "Purpose of Run: ${{ inputs.tags }}"
+        
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Prepare
+        run: |
+          platform=${{ matrix.platform.name }}
+          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
+          
+      - name: Set Environment
+        uses: c-py/action-dotenv-to-setenv@v5
+        id: source-env
+        with:
+          env-file: env/.env
+
+      - name: Echo Zerotier Proxy Version from env file
+        run: | 
+          echo ${{ steps.source-env.outputs.zerotierproxy_version }} >> "$GITHUB_ENV"
+        
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRY_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+   
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up QEMU for Multi-Arch Builds
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
+      - name: Verify QEMU Installation
+        run: |
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          echo "QEMU has been set up successfully."
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+        with:
+          version: latest
+
+      # Add caching for Docker layers
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ matrix.platform.name }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-${{ matrix.platform.name }}-
+            ${{ runner.os }}-buildx-
+          
+      - name: Build and Push Image by Digest
+        id: build
+        uses: docker/build-push-action@v6.16.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform.name }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ env.ZEROTIERPROXY_VERSION }}
+          provenance: mode=max
+          sbom: true
+          outputs: type=image,name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=local,src=/tmp/.buildx-cache
+          cache-to: type=local,dest=/tmp/.buildx-cache-new,mode=max
+
+      # This is a workaround to prevent cache size from growing indefinitely
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
+      - name: Debug DOCKER_METADATA_OUTPUT_JSON
+        run: |
+          echo "$DOCKER_METADATA_OUTPUT_JSON"
+          
+      - name: Export and Debug Uploaded Digests
+        run: |
+          mkdir -p /tmp/digests
+          if [ -z "${{ steps.build.outputs.digest }}" ]; then
+            echo "Error: No digest found!" && exit 1
+          fi
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+          echo "Digest file created:"
+          ls -l /tmp/digests
+          
+      - name: Upload Digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ env.PLATFORM_PAIR }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    runs-on: ubuntu-latest
+    needs: 
+      - build
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+          
+      - name: List digests downloaded
+        run: |
+          echo "Digest files retrieved:"
+          ls -l /tmp/digests
         
       - name: Set Environment
         uses: c-py/action-dotenv-to-setenv@v5
         id: source-env
         with:
           env-file: env/.env
-          
+
       - name: Echo Zerotier Proxy Version from env file
         run: | 
           echo ${{ steps.source-env.outputs.zerotierproxy_version }} >> "$GITHUB_ENV"
-        
-      - name: Prepare
-        run: |
-          platform=${{ matrix.platform.name }}
-          echo "PLATFORM_PAIR=${platform//\//-}" >> "$GITHUB_ENV"
-        
+          
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3.4.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3.10.0
+
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=${{ env.ZEROTIERPROXY_VERSION }}
-   
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          images: |
+            ${{ env.REGISTRY_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
           
-      - name: Set up QEMU for Multi-Arch Builds
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: ${{ matrix.platform.name }}
+      - name: Create manifest list and push to Docker Hub
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create --tag ${{ env.REGISTRY_IMAGE }}:latest \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+          docker buildx imagetools create --tag ${{ env.REGISTRY_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }} \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        
-      - name: Build and Push
-        uses: docker/build-push-action@v6.16.0
-        with:
-          context: .
-          platforms: ${{ matrix.platform.name }}
-          build-args: VERSION=${{ env.ZEROTIERPROXY_VERSION }}
-          labels: ${{ steps.meta.outputs.labels }}
-          provenance: mode=max
-          sbom: true
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: |
-            ${{ env.REGISTRY_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }}
-            ${{ env.REGISTRY_IMAGE }}:latest
+      - name: Create manifest list and push to GHCR
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create --tag ${{ env.GHCR_IMAGE }}:latest \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+          docker buildx imagetools create --tag ${{ env.GHCR_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }} \
+            $(printf '${{ env.GHCR_IMAGE }}@sha256:%s ' *)
+            
+      - name: Inspect image
+        run: |
+          echo "Docker Hub images:"
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:latest
+          docker buildx imagetools inspect ${{ env.REGISTRY_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }}
+          echo "GHCR images:"
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:latest
+          docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }}
