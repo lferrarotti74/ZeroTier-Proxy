@@ -24,6 +24,3 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
-    ignore:
-    - dependency-name: "softprops/action-gh-release"
-      update-types: ["version-update:semver-major"]

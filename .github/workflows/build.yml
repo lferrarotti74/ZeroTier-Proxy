@@ -2,8 +2,9 @@ name: Build release image
 
 # Add permissions block
 permissions:
-  contents: read
+  contents: write  # Required for updating variables
   packages: write
+  actions: write   # Required for updating repository variables
 
 on:
   workflow_dispatch:
@@ -26,14 +27,100 @@ on:
     branches:
       - "main"
     paths-ignore:
-      - 'README.md'
-      - 'LICENSE'
+      # Documentation files
+      - '*.md'
+      - 'docs/**'
+      - '.github/**/*.md'
       
+      # License and legal files
+      - 'LICENSE*'
+      - 'COPYING*'
+      - 'COPYRIGHT*'
+      
+      # Git and GitHub specific files
+      - '.gitignore'
+      - '.gitattributes'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE/**'
+      - '.github/dependabot.yml'
+      - '.github/CODEOWNERS'
+      
+      # Editor and IDE files
+      - '.vscode/**'
+      - '.idea/**'
+      - '*.swp'
+      - '*.swo'
+      - '*~'
+      
+      # Package manager files that don't affect builds
+      - '.npmignore'
+      - '.dockerignore'
+      - '.eslintignore'
+      - '.prettierignore'
+      
+      # CI/CD configuration for other systems
+      - '.travis.yml'
+      - '.circleci/**'
+      - 'Jenkinsfile'
+      - '.gitlab-ci.yml'
+      
+      # Common non-code files
+      - '*.txt'
+      - 'CHANGELOG*'
+      - 'CONTRIBUTING*'
+      - 'AUTHORS*'
+      - 'MAINTAINERS*'
+
 env:
   REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy
   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/zerotier-proxy
 
 jobs:
+  # SonarQube Analysis Job
+  sonarqube:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    if: >
+      (github.event_name == 'push' || github.event_name == 'pull_request') ||
+      (github.event_name == 'schedule' && needs.check-base-image.outputs.should_build == 'true')
+    #needs: [check-base-image]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0  # Required for proper blame/coverage tracking
+
+      - name: Cache SonarQube packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+
+      - name: Prepare SonarQube arguments
+        id: sonar-args
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "args=-Dsonar.projectKey=lferrarotti74_ZeroTier-Proxy \
+                  -Dsonar.organization=lferrarotti74 \
+                  -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
+                  -Dsonar.pullrequest.branch=${{ github.head_ref }} \
+                  -Dsonar.pullrequest.base=${{ github.base_ref }}" >> $GITHUB_OUTPUT
+          else
+            echo "args=-Dsonar.projectKey=lferrarotti74_ZeroTier-Proxy \
+                  -Dsonar.organization=lferrarotti74 \
+                  -Dsonar.branch.name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6.0.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ steps.sonar-args.outputs.args }}
+
   build:
     runs-on: ubuntu-latest
     strategy:
@@ -55,7 +142,7 @@ jobs:
           echo "Purpose of Run: ${{ inputs.tags }}"
         
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         
       - name: Prepare
         run: |
@@ -81,13 +168,13 @@ jobs:
             ${{ env.GHCR_IMAGE }}
    
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -167,10 +254,10 @@ jobs:
       - build
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
         
       - name: Download digests
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           path: /tmp/digests
           pattern: digests-*
@@ -192,13 +279,13 @@ jobs:
           echo ${{ steps.source-env.outputs.zerotierproxy_version }} >> "$GITHUB_ENV"
           
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.4.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.5.0
+        uses: docker/login-action@v3.4.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
