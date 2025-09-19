@@ -1,0 +1,379 @@
+# =============================================================================
+# COMPREHENSIVE .GITIGNORE TEMPLATE
+# =============================================================================
+# This file specifies intentionally untracked files that Git should ignore.
+# Files already tracked by Git are not affected; see the git rm --cached command.
+# 
+# Each line in a gitignore file specifies a pattern:
+# - Lines starting with # are comments
+# - Blank lines are ignored
+# - ! negates a pattern (includes files that would otherwise be ignored)
+# - / at end means directory only
+# - / at start means from repository root
+# - * matches anything except /
+# - ** matches zero or more directories
+# =============================================================================
+
+# =============================================================================
+# OPERATING SYSTEM GENERATED FILES
+# =============================================================================
+
+# macOS
+# -----
+.DS_Store              # Stores custom folder attributes (icons, view options)
+.DS_Store?             # Sometimes created with this name
+._*                    # Resource fork files created by macOS
+.Spotlight-V100        # Spotlight search index
+.Trashes               # Trash folder on network volumes
+ehthumbs.db            # Thumbnail cache on network volumes
+Thumbs.db              # Windows thumbnail cache files
+
+# Windows
+# -------
+Thumbs.db              # Windows Explorer thumbnail cache
+ehthumbs.db            # Windows Explorer thumbnail cache (encrypted)
+Desktop.ini            # Windows folder configuration file
+$RECYCLE.BIN/          # Windows Recycle Bin folder
+*.tmp                  # Windows temporary files
+*.temp                 # Windows temporary files
+
+# Linux
+# -----
+*~                     # Temporary files created by text editors
+.fuse_hidden*          # FUSE hidden files
+.directory             # KDE directory preferences
+.Trash-*               # Trash folders on Linux
+
+# =============================================================================
+# EDITORS AND IDEs
+# =============================================================================
+
+# Visual Studio Code
+# ------------------
+.vscode/               # VS Code workspace settings (comment out to share settings)
+!.vscode/settings.json # Include global settings (remove ! to ignore)
+!.vscode/tasks.json    # Include tasks configuration
+!.vscode/launch.json   # Include debugger configuration
+!.vscode/extensions.json # Include recommended extensions
+*.code-workspace       # VS Code workspace files
+
+# IntelliJ IDEA / WebStorm / PhpStorm / PyCharm etc.
+# --------------------------------------------------
+.idea/                 # IntelliJ IDEA project files
+*.iml                  # IntelliJ IDEA module files
+*.ipr                  # IntelliJ IDEA project files
+*.iws                  # IntelliJ IDEA workspace files
+
+# Eclipse
+# -------
+.metadata/             # Eclipse workspace metadata
+.classpath             # Eclipse Java classpath
+.project               # Eclipse project file
+.settings/             # Eclipse project settings
+
+# Vim
+# ---
+*.swp                  # Vim swap files
+*.swo                  # Vim swap files
+*.swn                  # Vim swap files
+*~                     # Vim backup files
+.netrwhist             # Vim file browser history
+
+# Emacs
+# -----
+*~                     # Emacs backup files
+\#*\#                  # Emacs autosave files
+.\#*                   # Emacs lock files
+
+# Sublime Text
+# ------------
+*.sublime-workspace    # Sublime Text workspace files
+*.sublime-project      # Sublime Text project files (optional to ignore)
+
+# =============================================================================
+# PROGRAMMING LANGUAGES & FRAMEWORKS
+# =============================================================================
+
+# Node.js / JavaScript
+# --------------------
+node_modules/          # Node.js dependencies (never commit these!)
+npm-debug.log*         # NPM debug logs
+yarn-debug.log*        # Yarn debug logs
+yarn-error.log*        # Yarn error logs
+.pnpm-debug.log*       # PNPM debug logs
+lerna-debug.log*       # Lerna debug logs
+.npm                   # NPM cache directory
+.eslintcache           # ESLint cache
+.parcel-cache/         # Parcel cache
+.next/                 # Next.js build output
+out/                   # Next.js static export
+build/                 # Common build directory
+dist/                  # Distribution/build files
+.nuxt/                 # Nuxt.js build directory
+.vuepress/dist/        # VuePress build output
+.cache/                # Gatsby cache
+public/                # Gatsby public directory (if generated)
+.serverless/           # Serverless framework
+
+# Python
+# ------
+__pycache__/           # Python bytecode cache
+*.py[cod]              # Python bytecode files
+*$py.class             # Python class files
+*.so                   # Shared objects (compiled extensions)
+.Python                # Python environment marker
+build/                 # Build artifacts
+develop-eggs/          # Development eggs
+dist/                  # Distribution files
+downloads/             # Downloads folder
+eggs/                  # Python eggs
+.eggs/                 # Python eggs info
+lib/                   # Lib folder
+lib64/                 # Lib64 folder
+parts/                 # Parts folder
+sdist/                 # Source distribution
+var/                   # Variable data
+wheels/                # Wheel files
+*.egg-info/            # Egg info
+.installed.cfg         # Installation configuration
+*.egg                  # Python eggs
+MANIFEST               # Manifest file
+
+# Virtual Environments
+venv/                  # Virtual environment (common name)
+env/                   # Virtual environment (alternative name)
+ENV/                   # Virtual environment (alternative name)
+.venv/                 # Virtual environment (hidden)
+.env/                  # Virtual environment (hidden)
+pip-log.txt            # Pip log file
+pip-delete-this-directory.txt
+
+# Jupyter Notebooks
+.ipynb_checkpoints     # Jupyter notebook checkpoints
+
+# Python testing
+.tox/                  # Tox testing
+.coverage              # Coverage reports
+.pytest_cache/         # Pytest cache
+.cache                 # General cache
+htmlcov/               # HTML coverage reports
+.coveragerc            # Coverage configuration
+
+# Java
+# ----
+*.class                # Compiled Java classes
+*.jar                  # Java archives (usually ignore, but not always)
+*.war                  # Web application archives
+*.ear                  # Enterprise archives
+*.zip                  # Zip files
+*.tar.gz               # Compressed tar files
+*.rar                  # RAR archives
+hs_err_pid*            # JVM error logs
+target/                # Maven build directory
+build/                 # Gradle build directory
+.gradle/               # Gradle cache
+
+# C/C++
+# -----
+*.o                    # Object files
+*.ko                   # Kernel object files
+*.obj                  # Object files (Windows)
+*.elf                  # Executable files
+*.exe                  # Windows executables
+*.out                  # Output files
+*.app                  # macOS applications
+*.dSYM/                # Debug symbols (macOS)
+*.su                   # Stack usage files
+*.idb                  # Database files
+*.pdb                  # Program database files
+
+# C# / .NET
+# ---------
+bin/                   # Binary output
+obj/                   # Object files
+*.user                 # User-specific files
+*.suo                  # Solution user options
+*.userprefs            # User preferences
+packages/              # NuGet packages (if not using package restore)
+*.nupkg                # NuGet package files
+
+# Ruby
+# ----
+*.gem                  # Ruby gems
+*.rbc                  # Ruby bytecode
+/.config               # Configuration directory
+/coverage/             # Coverage reports
+/InstalledFiles        # Installed files list
+/pkg/                  # Package directory
+/spec/reports/         # Test reports
+/spec/examples.txt     # RSpec examples
+/test/tmp/             # Test temporary files
+/test/version_tmp/     # Test version temporary files
+/tmp/                  # Temporary files
+/.bundle               # Bundler configuration
+/vendor/bundle         # Bundler gems
+/log/*.log             # Log files
+/tmp/**/*              # All temporary files
+
+# PHP
+# ---
+vendor/                # Composer dependencies
+composer.phar          # Composer executable
+composer.lock          # Composer lock file (optional to ignore)
+.env                   # Environment variables
+.env.local             # Local environment variables
+*.log                  # Log files
+
+# Go
+# --
+*.exe                  # Windows executables
+*.exe~                 # Windows executable backups
+*.dll                  # Dynamic libraries
+*.so                   # Shared objects
+*.dylib                # Dynamic libraries (macOS)
+*.test                 # Test binaries
+*.out                  # Output files
+/vendor/               # Go vendor directory (if not using modules)
+
+# Rust
+# ----
+/target/               # Rust build artifacts
+Cargo.lock             # Cargo lock file (ignore for libraries, keep for applications)
+
+# =============================================================================
+# DATABASES
+# =============================================================================
+*.sqlite               # SQLite database files
+*.sqlite3              # SQLite3 database files
+*.db                   # Generic database files
+*.mdb                  # Microsoft Access databases
+
+# =============================================================================
+# LOGS AND TEMPORARY FILES
+# =============================================================================
+logs/                  # Log directories
+*.log                  # All log files
+npm-debug.log*         # NPM debug logs
+yarn-debug.log*        # Yarn debug logs
+yarn-error.log*        # Yarn error logs
+lerna-debug.log*       # Lerna debug logs
+pids/                  # Process ID files
+*.pid                  # Process ID files
+*.seed                 # Seed files
+*.pid.lock             # PID lock files
+lib-cov/               # Coverage lib
+coverage/              # Coverage reports
+.nyc_output/           # NYC coverage output
+
+# =============================================================================
+# ENVIRONMENT AND CONFIGURATION FILES
+# =============================================================================
+.env                   # Environment variables (NEVER commit secrets!)
+.env.local             # Local environment variables
+.env.development       # Development environment variables
+.env.test              # Test environment variables
+.env.production        # Production environment variables
+.env.staging           # Staging environment variables
+config.json            # Configuration files (if they contain secrets)
+secrets.json           # Secret files
+.secrets               # Hidden secrets
+
+# =============================================================================
+# BUILD TOOLS AND DEPENDENCIES
+# =============================================================================
+node_modules/          # Node.js dependencies
+jspm_packages/         # JSPM packages
+bower_components/      # Bower components (deprecated but still used)
+.sass-cache/           # Sass cache
+.grunt/                # Grunt temporary files
+.cache/                # General cache directories
+*.tgz                  # Compressed tar files
+*.tar.gz               # Compressed tar files
+
+# =============================================================================
+# DOCKER
+# =============================================================================
+Dockerfile.dev         # Development Docker files (optional)
+docker-compose.override.yml # Docker compose override
+.dockerignore          # Docker ignore file itself (optional)
+
+# =============================================================================
+# CLOUD AND DEPLOYMENT
+# =============================================================================
+.serverless/           # Serverless framework
+.terraform/            # Terraform state and modules
+*.tfstate              # Terraform state files
+*.tfstate.*            # Terraform state backups
+terraform.tfvars       # Terraform variables (if they contain secrets)
+.terraformrc           # Terraform configuration
+terraform.rc           # Terraform configuration
+
+# AWS
+.aws-sam/              # AWS SAM build artifacts
+samconfig.toml         # SAM configuration
+
+# =============================================================================
+# SECURITY AND CREDENTIALS
+# =============================================================================
+# IMPORTANT: Never commit sensitive information!
+*.pem                  # Private keys
+*.key                  # Private keys
+*.p12                  # PKCS12 files
+*.cert                 # Certificates
+*.crt                  # Certificates
+id_rsa                 # SSH private key
+id_dsa                 # SSH private key
+.ssh/                  # SSH directory
+.gnupg/                # GPG directory
+
+# =============================================================================
+# MISC FILES
+# =============================================================================
+.archive/              # Archive directories
+*.backup               # Backup files
+*.bak                  # Backup files
+*.orig                 # Original files (merge conflicts)
+*.rej                  # Rejected patches
+*.swp                  # Swap files
+*.tmp                  # Temporary files
+*.temp                 # Temporary files
+*~                     # Temporary files created by editors
+
+# =============================================================================
+# PROJECT SPECIFIC
+# =============================================================================
+# Add your project-specific ignores below this line
+# Examples:
+# uploads/              # User uploaded files
+# media/                # Media files
+# static/collected/     # Django collected static files
+# *.local.json          # Local configuration files
+
+# =============================================================================
+# COMMON PATTERNS TO CONSIDER
+# =============================================================================
+# Uncomment these patterns if they apply to your project:
+
+# Documentation builds
+# docs/_build/          # Sphinx documentation builds
+# site/                 # MkDocs build output
+
+# Testing
+# .pytest_cache/        # Pytest cache
+# .tox/                 # Tox testing
+# htmlcov/              # HTML coverage reports
+
+# Monitoring and profiling
+# .profile              # Profiling data
+
+# =============================================================================
+# TIPS FOR CUSTOMIZATION
+# =============================================================================
+# 1. Use specific patterns rather than broad ones when possible
+# 2. Test your .gitignore with: git status --ignored
+# 3. Use git check-ignore <file> to test specific files
+# 4. Remember: .gitignore only affects untracked files
+# 5. Use git rm --cached <file> to untrack already tracked files
+# 6. Create global gitignore: git config --global core.excludesfile ~/.gitignore
+# 7. Use ! to negate patterns and include specific files
+# =============================================================================
