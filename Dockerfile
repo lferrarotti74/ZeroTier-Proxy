@@ -1,6 +1,6 @@
 # vim: ft=dockerfile
 
-FROM alpine:latest AS stage
+FROM alpine:3 AS stage
 
 # Define an optional build argument to invalidate cache
 ARG CACHEBUST=1
@@ -8,7 +8,7 @@ ARG CACHEBUST=1
 ARG VERSION=1.12.0 //Default value provided
 
 RUN apk --no-cache update && apk --no-cache upgrade \
-    && apk --no-cache --update add alpine-sdk linux-headers make clang git \
+    && apk --no-cache --update add alpine-sdk clang git linux-headers make \
     && rm -rf /var/cache/apk/* \
     && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
@@ -18,12 +18,16 @@ COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
 
 RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     if [ "$VER" -lt "1140" ]; then \
-        patch --verbose -u Makefile -i patchMakefile.patch ; sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
+        patch --verbose -u Makefile -i patchMakefile.patch; \
+        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
+        /usr/bin/make -j$(nproc); \
     else \
-        patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch ; sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp ; /usr/bin/make -j$(nproc) ; \
+        patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch; \
+        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
+        /usr/bin/make -j$(nproc); \
     fi
 
-FROM alpine:latest
+FROM alpine:3
 
 # Define an optional build argument to invalidate cache
 ARG CACHEBUST=1
@@ -40,16 +44,31 @@ COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
 RUN echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
-    && apk --no-cache update && apk --no-cache upgrade \
-    && apk --no-cache --update add iproute2 net-tools fping iputils-ping iputils-arping procps jq netcat-openbsd mtr musl libstdc++ libgcc \
+    && apk --no-cache update \
+    && apk --no-cache upgrade \
+    && apk --no-cache --update add \
+        fping \
+        iproute2 \
+        iputils-arping \
+        iputils-ping \
+        jq \
+        libgcc \
+        libstdc++ \
+        mtr \
+        musl \
+        net-tools \
+        netcat-openbsd \
+        procps \
     && rm -rf /var/cache/apk/* \
-    && addgroup -S zerotier && adduser -S zerotier -G zerotier -h /var/lib/zerotier-one -g "zerotier" \
+    && addgroup -S zerotier \
+    && adduser -S zerotier -G zerotier -h /var/lib/zerotier-one -g "zerotier" \
     && echo "export HISTFILE=/dev/null" >> /etc/profile
 
 COPY scripts/entrypoint.sh /entrypoint.sh
 COPY scripts/healthcheck.sh /healthcheck.sh
 
-RUN chmod 755 /entrypoint.sh ; chmod 755 /healthcheck.sh
+RUN chmod 755 /entrypoint.sh \
+    && chmod 755 /healthcheck.sh
 
 EXPOSE 443/tcp
 USER zerotier
