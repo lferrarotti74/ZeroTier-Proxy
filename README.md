@@ -53,7 +53,8 @@ docker pull lferrarotti74/zerotier-proxy:latest
 ```bash
 # Run ZeroTier TCP Proxy server
 docker run -d --name zerotier-proxy --restart unless-stopped \
-  -p 443:443 \
+  -p 8443:8443 \
+  -e ZT_TCP_PORT=8443 \
   lferrarotti74/zerotier-proxy:latest
 
 # Check if the proxy is running
@@ -69,7 +70,7 @@ Create or edit `/var/lib/zerotier-one/local.conf` on your ZeroTier clients:
 ```json
 {
   "settings": {
-    "tcpFallbackRelay": "YOUR_PROXY_SERVER_IP/443",
+    "tcpFallbackRelay": "YOUR_PROXY_SERVER_IP/8443",
     "forceTcpRelay": true
   }
 }
@@ -81,8 +82,8 @@ If you control the network infrastructure, redirect the default ZeroTier TCP rel
 
 ```bash
 # Example iptables rules (adjust for your environment)
-iptables -t nat -A PREROUTING -p tcp -d 204.80.128.1 --dport 443 -j DNAT --to-destination YOUR_PROXY_SERVER_IP
-iptables -t nat -A POSTROUTING -p tcp -d YOUR_PROXY_SERVER_IP --dport 443 -j SNAT --to-source 204.80.128.1
+iptables -t nat -A PREROUTING -p tcp -d 204.80.128.1 --dport 443 -j DNAT --to-destination YOUR_PROXY_SERVER_IP:8443
+iptables -t nat -A POSTROUTING -p tcp -d YOUR_PROXY_SERVER_IP --dport 8443 -j SNAT --to-source 204.80.128.1
 ```
 
 ## Usage Examples
@@ -97,7 +98,7 @@ docker logs zerotier-proxy
 docker exec zerotier-proxy netstat -tlnp
 
 # View proxy configuration
-docker exec zerotier-proxy cat /etc/zerotier/tcp-proxy.conf
+docker exec zerotier-proxy cat /var/lib/zerotier-one/local.conf
 
 # Restart the proxy service
 docker restart zerotier-proxy
@@ -108,20 +109,23 @@ docker restart zerotier-proxy
 ```bash
 # Run with custom port
 docker run -d --name zerotier-proxy --restart unless-stopped \
-  -p 9443:443 \
+  -p 9443:9443 \
+  -e ZT_TCP_PORT=9443 \
   lferrarotti74/zerotier-proxy:latest
 
 # Run with resource limits
 docker run -d --name zerotier-proxy --restart unless-stopped \
-  -p 443:443 \
+  -p 8443:8443 \
+  -e ZT_TCP_PORT=8443 \
   --memory=256m \
   --cpus=0.5 \
   lferrarotti74/zerotier-proxy:latest
 
 # Run with custom configuration
 docker run -d --name zerotier-proxy --restart unless-stopped \
-  -p 443:443 \
-  -v /path/to/config:/etc/zerotier \
+  -p 8443:8443 \
+  -v zerotier-proxy:/var/lib/zerotier-one \
+  -e ZT_TCP_PORT=8443 \
   lferrarotti74/zerotier-proxy:latest
 ```
 
@@ -129,7 +133,7 @@ docker run -d --name zerotier-proxy --restart unless-stopped \
 
 ```bash
 # Test if the proxy is accessible
-telnet YOUR_PROXY_SERVER_IP 443
+telnet YOUR_PROXY_SERVER_IP 8443
 
 # Check proxy from ZeroTier client
 zerotier-cli info
@@ -146,24 +150,34 @@ version: '3.8'
 services:
   zerotier-proxy:
     image: lferrarotti74/zerotier-proxy:latest
+    hostname: zerotier-proxy
     container_name: zerotier-proxy
     restart: unless-stopped
-    ports:
-      - "443:443"
-    environment:
-      - PROXY_PORT=443
-      - LOG_LEVEL=info
+    volumes:
+      - zerotier-proxy:/var/lib/zerotier-one
     networks:
-      - proxy-net
+      - zerotier-proxy
+    ports:
+      - "8443:8443/tcp"
+    environment:
+      - ZT_OVERRIDE_LOCAL_CONF=true
+      - ZT_TCP_PORT=8443
     deploy:
       resources:
         limits:
           memory: 256M
           cpus: '0.5'
 
+volumes:
+  zerotier-proxy:
+
 networks:
-  proxy-net:
+  zerotier-proxy:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.31.251.8/29
 ```
 
 Run with:
@@ -190,7 +204,7 @@ ps aux | grep tcp-proxy
 netstat -tlnp
 
 # View logs
-tail -f /var/log/zerotier/tcp-proxy.log
+docker logs zerotier-proxy
 ```
 
 ## Available Commands
@@ -205,15 +219,15 @@ The TCP proxy server provides several management capabilities:
 ### Monitoring Commands
 - `netstat -tlnp` - Show listening ports and connections
 - `ps aux | grep tcp-proxy` - Check proxy process status
-- `tail -f /var/log/zerotier/tcp-proxy.log` - Monitor real-time logs
+- `docker logs zerotier-proxy` - Monitor real-time logs
 
 ### Configuration Commands
-- `cat /etc/zerotier/tcp-proxy.conf` - View proxy configuration
+- `cat /var/lib/zerotier-one/local.conf` - View proxy configuration
 - `systemctl status tcp-proxy` - Check service status (if using systemd)
 
 ## Network Requirements
 
-- **Port Access**: TCP port 443 (or custom port) must be accessible from the internet
+- **Port Access**: TCP port 8443 (or custom port) must be accessible from the internet
 - **Firewall Rules**: Ensure incoming TCP connections are allowed on the proxy port
 - **Network Placement**: Deploy as close as possible to the nodes it will serve for optimal latency
 - **Internet Connectivity**: Stable internet connection for relay functionality
@@ -232,7 +246,8 @@ The TCP proxy server provides several management capabilities:
 ```bash
 # Run with performance optimizations
 docker run -d --name zerotier-proxy --restart unless-stopped \
-  -p 443:443 \
+  -p 8443:8443 \
+  -e ZT_TCP_PORT=8443 \
   --memory=512m \
   --cpus=1.0 \
   --ulimit nofile=65536:65536 \
@@ -245,7 +260,7 @@ docker run -d --name zerotier-proxy --restart unless-stopped \
 ```json
 {
   "settings": {
-    "tcpFallbackRelay": "your-proxy-server.com/443",
+    "tcpFallbackRelay": "your-proxy-server.com/8443",
     "forceTcpRelay": true
   }
 }
@@ -255,7 +270,7 @@ docker run -d --name zerotier-proxy --restart unless-stopped \
 ```json
 {
   "settings": {
-    "tcpFallbackRelay": "your-proxy-server.com/443"
+    "tcpFallbackRelay": "your-proxy-server.com/8443"
   }
 }
 ```
