@@ -852,7 +852,7 @@ jobs:
             
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "### 📊 Scan Details" >> $GITHUB_STEP_SUMMARY
-            echo "📋 **Scan Tools Used:** Enhanced Trivy (v0.67.0), Grype, OSV-Scanner" >> $GITHUB_STEP_SUMMARY
+            echo "📋 **Scan Tools Used:** Enhanced Trivy (v0.67.2), Grype, OSV-Scanner" >> $GITHUB_STEP_SUMMARY
             echo "📁 **Reports:** Available in workflow artifacts (30-day retention)" >> $GITHUB_STEP_SUMMARY
             echo "🔍 **Formats:** Table, SARIF, JSON outputs generated" >> $GITHUB_STEP_SUMMARY
             echo "🛡️ **GitHub Security:** SARIF results uploaded to Security tab" >> $GITHUB_STEP_SUMMARY
