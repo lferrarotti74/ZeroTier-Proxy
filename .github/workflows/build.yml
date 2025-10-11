@@ -219,17 +219,23 @@ jobs:
 
       - name: Prepare SonarQube arguments
         id: sonar-args
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$EVENT_NAME" = "pull_request" ]; then
             echo "args=-Dsonar.projectKey=lferrarotti74_ZeroTier-Proxy \
                   -Dsonar.organization=lferrarotti74 \
-                  -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} \
-                  -Dsonar.pullrequest.branch=${{ github.head_ref }} \
-                  -Dsonar.pullrequest.base=${{ github.base_ref }}" >> $GITHUB_OUTPUT
+                  -Dsonar.pullrequest.key=$PR_NUMBER \
+                  -Dsonar.pullrequest.branch=$HEAD_REF \
+                  -Dsonar.pullrequest.base=$BASE_REF" >> $GITHUB_OUTPUT
           else
             echo "args=-Dsonar.projectKey=lferrarotti74_ZeroTier-Proxy \
                   -Dsonar.organization=lferrarotti74 \
-                  -Dsonar.branch.name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+                  -Dsonar.branch.name=$REF_NAME" >> $GITHUB_OUTPUT
           fi
 
       - name: SonarQube Scan
@@ -261,8 +267,10 @@ jobs:
         ]
     steps:
       - name: Print the Purpose of Run
+        env:
+          TAGS: ${{ inputs.tags }}
         run: |
-          echo "Purpose of Run: ${{ inputs.tags }}"
+          echo "Purpose of Run: $TAGS"
         
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
