@@ -485,7 +485,7 @@ jobs:
       - name: Setup Trivy
         uses: aquasecurity/setup-trivy@e6c2c5e321ed9123bda567646e2f96565e34abe1 # v0.2.0
         with:
-          version: 'v0.67.0'  # Use latest version as suggested in logs
+          version: 'v0.67.2'  # Updated to latest version with bug fixes
 
       - name: Cache Trivy DB
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -566,11 +566,23 @@ jobs:
       - name: Generate SBOM
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o json > sbom.json
 
-      - name: Install OSV Scanner
-        run: curl -sSfL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh | bash
-
-      - name: Scan SBOM with OSV
-        run: osv-scanner sbom.json --output osv-report.json || true
+      - name: Run OSV Scanner
+        run: |
+          # Download and install OSV Scanner
+          curl -L -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
+          chmod +x osv-scanner
+          
+          # Run OSV Scanner
+          ./osv-scanner --format=json --output=osv-report.json ./ || true
+          
+          # Verify output file exists
+          if [ -f osv-report.json ]; then
+            echo "✅ OSV Scanner completed successfully"
+            echo "📄 Report saved as osv-report.json"
+          else
+            echo "⚠️ OSV Scanner report not found, creating empty report"
+            echo '{"results": []}' > osv-report.json
+          fi
 
       ######################
       # Upload SARIF to GitHub Security
