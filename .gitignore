@@ -17,7 +17,7 @@
 # =============================================================================
 # PROJECT-SPECIFIC DOCUMENTATION AND SECURITY FILES (EXCLUDE FROM SYNC)
 # =============================================================================
-repository-security-checklist.md  # Internal security checklist (contains sensitive info)
+repository-security-checklist.md
 
 # =============================================================================
 # OPERATING SYSTEM GENERATED FILES
