@@ -566,19 +566,20 @@ jobs:
       - name: Generate SBOM
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o json > sbom.json
 
-      - name: Run OSV Scanner
+      - name: Run OSV Scanner on Container Image
         run: |
           # Download and install OSV Scanner
           curl -L -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
           chmod +x osv-scanner
           
-          # Run OSV Scanner
-          ./osv-scanner --format=json --output=osv-report.json ./ || true
+          # Run OSV Scanner on the container image
+          echo "🔍 Scanning container image: ${{ env.REGISTRY_IMAGE }}:latest"
+          ./osv-scanner scan image ${{ env.REGISTRY_IMAGE }}:latest --format=json --output=osv-report.json || true
           
           # Verify output file exists
           if [ -f osv-report.json ]; then
             echo "✅ OSV Scanner completed successfully"
-            echo "📄 Report saved as osv-report.json"
+            echo "📄 Container image scan report saved as osv-report.json"
           else
             echo "⚠️ OSV Scanner report not found, creating empty report"
             echo '{"results": []}' > osv-report.json
