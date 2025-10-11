@@ -5,6 +5,7 @@ permissions:
   contents: write  # Required for updating variables
   packages: write
   actions: write   # Required for updating repository variables
+  security-events: write  # Required for uploading SARIF results to GitHub Security
 
 on:
   workflow_dispatch:
@@ -23,6 +24,16 @@ on:
         description: 'Purpose of Run This Workflow?'
         required: true
         type: string
+      force_build:
+        description: 'Force build even if no base image updates'
+        required: false
+        default: false
+        type: boolean
+      update_digest:
+        description: 'Update base image digests after manual build'
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - "main"
@@ -70,17 +81,115 @@ on:
       - 'CONTRIBUTING*'
       - 'AUTHORS*'
       - 'MAINTAINERS*'
+  pull_request:
+    types: [opened, synchronize, reopened]
+  # NEW: Schedule for checking Alpine Linux updates
+  schedule:
+    - cron: '0 6 * * *'  # Daily at 6 AM UTC
 
 env:
   REGISTRY_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/zerotier-proxy
   GHCR_IMAGE: ghcr.io/${{ github.repository_owner }}/zerotier-proxy
 
 jobs:
+  # NEW: Check if base image (Alpine) has been updated
+  check-base-image:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.check-image.outputs.should_build || steps.default.outputs.should_build }}
+      update_reason: ${{ steps.check-image.outputs.update_reason || steps.default.outputs.update_reason }}
+      alpine_digest: ${{ steps.check-image.outputs.digest || steps.default.outputs.digest }}
+    steps:
+      - name: Check Alpine Linux updates
+        id: check-image
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && (inputs.force_build == 'false' || inputs.update_digest == 'true'))
+        run: |
+          echo "🔍 Checking Alpine Linux for updates..."
+          
+          # Get current digest from Docker Hub using a more reliable method
+          echo "Pulling latest Alpine image info..."
+          
+          # Use docker manifest inspect instead of buildx imagetools
+          NEW_DIGEST=$(docker manifest inspect alpine:latest | jq -r '.config.digest // .digest // empty')
+          
+          # Fallback method if the above doesn't work
+          if [ -z "$NEW_DIGEST" ] || [ "$NEW_DIGEST" = "null" ]; then
+            echo "Trying alternative digest retrieval method..."
+            docker pull alpine:latest > /dev/null 2>&1
+            NEW_DIGEST=$(docker image inspect alpine:latest --format '{{index .RepoDigests 0}}' | cut -d'@' -f2)
+          fi
+          
+          # Final fallback using docker buildx but with better error handling
+          if [ -z "$NEW_DIGEST" ] || [ "$NEW_DIGEST" = "null" ]; then
+            echo "Using buildx imagetools as fallback..."
+            set +e  # Don't exit on error
+            INSPECT_OUTPUT=$(docker buildx imagetools inspect alpine:latest --format '{{json .}}' 2>/dev/null)
+            if [ $? -eq 0 ]; then
+              NEW_DIGEST=$(echo "$INSPECT_OUTPUT" | jq -r '.manifest.digest // .digest // empty')
+            fi
+            set -e  # Re-enable exit on error
+          fi
+          
+          echo "Current Alpine digest: $NEW_DIGEST"
+          
+          # Validate digest format
+          if [[ ! "$NEW_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "⚠️ Warning: Retrieved digest format seems invalid: $NEW_DIGEST"
+            echo "Skipping build due to digest retrieval error."
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "update_reason=Failed to retrieve valid Alpine digest" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          # Get stored digest from GitHub Variables
+          STORED_DIGEST="${{ vars.ALPINE_DIGEST }}"
+          echo "Stored Alpine digest: $STORED_DIGEST"
+          
+          # Handle empty or missing stored digest
+          if [ -z "$STORED_DIGEST" ] || [ "$STORED_DIGEST" = " " ] || [ "$STORED_DIGEST" = "sha256:initial" ]; then
+            echo "🆕 No previous digest stored. This is the first run - build will proceed."
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "digest=$NEW_DIGEST" >> $GITHUB_OUTPUT
+            echo "update_reason=First run - initializing Alpine digest tracking" >> $GITHUB_OUTPUT
+          elif [ "$NEW_DIGEST" != "$STORED_DIGEST" ]; then
+            echo "✅ Alpine Linux has been updated! Build will proceed."
+            echo "should_build=true" >> $GITHUB_OUTPUT
+            echo "digest=$NEW_DIGEST" >> $GITHUB_OUTPUT
+            echo "update_reason=Alpine Linux base image updated (${STORED_DIGEST:0:12}... → ${NEW_DIGEST:0:12}...)" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ No Alpine update detected. Skipping build."
+            echo "should_build=false" >> $GITHUB_OUTPUT
+            echo "update_reason=No Alpine updates detected" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Set default for non-scheduled runs
+        id: default
+        if: github.event_name != 'schedule' && (github.event_name != 'workflow_dispatch' || inputs.force_build == 'true')
+        run: |
+          echo "should_build=true" >> $GITHUB_OUTPUT
+          echo "update_reason=Non-scheduled trigger" >> $GITHUB_OUTPUT
+          echo "digest=" >> $GITHUB_OUTPUT
+
+  print-tag:
+    runs-on: ubuntu-latest
+    # Only run if it's not a scheduled run, OR if it's scheduled and base image updated
+    if: github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true'
+    needs: [check-base-image]
+    steps:
+      - name: Print the purpose of run
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "Purpose of Run: ${{ needs.check-base-image.outputs.update_reason }}"
+          else
+            echo "Purpose of Run: ${{ inputs.tags || 'Code changes or manual trigger' }}"
+          fi
+
   # Dummy SonarQube Analysis for Dependabot
   sonarqube-dummy:
     name: SonarQube Analysis
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
+    needs: [check-base-image]
     steps:
       - name: Skip SonarQube scan
         run: echo "Skipping SonarQube scan for Dependabot PRs"
@@ -94,6 +203,7 @@ jobs:
         (github.event_name == 'push' || github.event_name == 'pull_request') ||
         (github.event_name == 'schedule' && needs.check-base-image.outputs.should_build == 'true')
       )
+    needs: [check-base-image]
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -133,6 +243,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    # Only run if it's not a scheduled run, OR if it's scheduled and base image updated
+    if: github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true'
+    needs: [check-base-image]
     strategy:
       matrix:
         platform: [
@@ -262,6 +375,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - build
+      - check-base-image
+    if: github.event_name != 'pull_request' && (github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true')
     steps:
       - name: Checkout
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
@@ -289,24 +404,24 @@ jobs:
           echo ${{ steps.source-env.outputs.zerotierproxy_version }} >> "$GITHUB_ENV"
           
       - name: Log in to Docker Hub
-        uses: docker/login-action@v3.6.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3.6.0
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.11.1
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
           images: |
             ${{ env.REGISTRY_IMAGE }}
@@ -336,3 +451,49 @@ jobs:
           echo "GHCR images:"
           docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:latest
           docker buildx imagetools inspect ${{ env.GHCR_IMAGE }}:${{ env.ZEROTIERPROXY_VERSION }}
+
+  # NEW: Update stored Alpine digest after successful build
+  # Updated update-digest job
+  update-digest:
+    runs-on: ubuntu-latest
+    needs: [check-base-image, merge]
+    permissions:
+      contents: write  # Changed from 'read' to 'write'
+      packages: write  # Keep existing
+      actions: write   # Add this for variable updates
+    if: >
+      (github.event_name == 'schedule' || 
+       (github.event_name == 'workflow_dispatch' && inputs.update_digest == 'true')) &&
+      needs.merge.result == 'success'
+    steps:
+      - name: Update stored base image digests
+        run: |
+          update_digest() {
+            local var_name="$1"
+            local current_value="$2"
+            local new_value="$3"
+  
+            if [ -n "$new_value" ] && [ "$new_value" != "$current_value" ]; then
+              echo "📝 Updating $var_name..."
+              echo "Previous: $current_value"
+              echo "New: $new_value"
+              
+              # Use GitHub CLI API directly instead of gh variable set
+              gh api \
+                --method PATCH \
+                -H "Accept: application/vnd.github+json" \
+                -H "X-GitHub-Api-Version: 2022-11-28" \
+                "/repos/${{ github.repository }}/actions/variables/$var_name" \
+                -f "name=$var_name" \
+                -f "value=$new_value"
+              
+              echo "✅ $var_name updated successfully!"
+            else
+              echo "ℹ️ $var_name unchanged."
+            fi
+          }
+  
+          update_digest "ALPINE_DIGEST" "${{ vars.ALPINE_DIGEST }}" "${{ needs.check-base-image.outputs.alpine_digest }}"
+          update_digest "UBUNTU_DIGEST" "${{ vars.UBUNTU_DIGEST }}" "${{ needs.check-base-image.outputs.ubuntu_digest }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_TOKEN }}
