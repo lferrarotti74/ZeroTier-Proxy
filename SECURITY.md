@@ -6,8 +6,8 @@ We actively support the following versions of ZeroTier-Proxy with security updat
 
 | Version | Supported          | Proxy Features | License |
 | ------- | ------------------ | -------------- | ------- |
-| 2025.x  | :white_check_mark: | TCP Proxy v1.0 | MIT |
-| 2024.x  | :x:                | N/A            | N/A |
+| 1.14.2  | :white_check_mark: | TCP Proxy v1.0 | MIT |
+| < 1.14.2| :x:                | N/A            | N/A |
 
 ### Important Licensing Information
 

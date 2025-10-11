@@ -32,8 +32,8 @@ jobs:
       DRY_RUN: ${{ steps.vars.outputs.DRY_RUN }}
       PREFIX: ${{ steps.vars.outputs.PREFIX }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
+      - name: Checkout
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 0
           submodules: recursive
@@ -138,7 +138,7 @@ jobs:
 
       - name: Create GitHub Release and upload assets
         if: ${{ steps.vars.outputs.DRY_RUN != 'true' }}
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@e7a8f85e1c67a31e6ed99a94b41bd0b71bbee6b8 # v2.0.9
         with:
           tag_name: ${{ steps.vars.outputs.TAG }}
           generate_release_notes: true
