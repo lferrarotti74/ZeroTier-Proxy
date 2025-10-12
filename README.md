@@ -1,6 +1,7 @@
 # ZeroTier-Proxy
 
 [![GitHub CI](https://github.com/lferrarotti74/ZeroTier-Proxy/workflows/Build%20release%20image/badge.svg)](https://github.com/lferrarotti74/ZeroTier-Proxy/actions/workflows/build.yml)
+[![Unit Tests](https://github.com/lferrarotti74/ZeroTier-Proxy/actions/workflows/tests.yml/badge.svg)](https://github.com/lferrarotti74/ZeroTier-Proxy/actions/workflows/tests.yml)
 [![Release](https://img.shields.io/github/v/release/lferrarotti74/ZeroTier-Proxy)](https://github.com/lferrarotti74/ZeroTier-Proxy/releases)
 [![Docker Hub](https://img.shields.io/docker/pulls/lferrarotti74/zerotier-proxy)](https://hub.docker.com/r/lferrarotti74/zerotier-proxy)
 [![Docker Image Size](https://img.shields.io/docker/image-size/lferrarotti74/zerotier-proxy/latest)](https://hub.docker.com/r/lferrarotti74/zerotier-proxy)
