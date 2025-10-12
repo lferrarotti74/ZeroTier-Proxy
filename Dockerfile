@@ -5,7 +5,8 @@ FROM alpine:3 AS stage
 # Define an optional build argument to invalidate cache
 ARG CACHEBUST=1
 
-ARG VERSION=1.12.0 //Default value provided
+# ZeroTier version - Updated to 1.14.2 to support tcpPort configuration in local.conf
+ARG VERSION=1.14.2 //Default value provided
 
 RUN apk --no-cache update && apk --no-cache upgrade \
     && apk --no-cache --update add alpine-sdk clang git linux-headers make \
@@ -32,7 +33,8 @@ FROM alpine:3
 # Define an optional build argument to invalidate cache
 ARG CACHEBUST=1
 
-ARG VERSION=1.12.0 //Default value provided
+# ZeroTier version - Updated to 1.14.2 to support tcpPort configuration in local.conf
+ARG VERSION=1.14.2 //Default value provided
 
 LABEL org.opencontainers.image.title="zerotier-proxy" \
       org.opencontainers.image.version="${VERSION}" \
@@ -60,6 +62,9 @@ RUN echo "${VERSION}" > /etc/zerotier-version \
         netcat-openbsd \
         procps \
     && rm -rf /var/cache/apk/* \
+    && rm -rf /sbin/apk \
+    && rm -rf /etc/apk \
+    && rm -f /usr/bin/wget \
     && addgroup -S zerotier \
     && adduser -S zerotier -G zerotier -h /var/lib/zerotier-one -g "zerotier" \
     && echo "export HISTFILE=/dev/null" >> /etc/profile
