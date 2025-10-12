@@ -97,9 +97,9 @@ jobs:
         run: |
           bats tests/container/
 
-      - name: Run proxy functionality tests
+      - name: Run compose functionality tests
         run: |
-          bats tests/proxy/
+          bats tests/compose/
 
       - name: Run script validation tests
         run: |
@@ -115,7 +115,7 @@ jobs:
           echo "ZeroTier-Proxy Test Summary" > test-report.txt
           echo "===========================" >> test-report.txt
           echo "Container tests: $(find tests/container/ -name '*.bats' 2>/dev/null | wc -l) test files" >> test-report.txt
-          echo "Proxy tests: $(find tests/proxy/ -name '*.bats' 2>/dev/null | wc -l) test files" >> test-report.txt
+          echo "Compose tests: $(find tests/compose/ -name '*.bats' 2>/dev/null | wc -l) test files" >> test-report.txt
           echo "Script tests: $(find tests/scripts/ -name '*.bats' 2>/dev/null | wc -l) test files" >> test-report.txt
           echo "Security tests: $(find tests/security/ -name '*.bats' 2>/dev/null | wc -l) test files" >> test-report.txt
           echo "Total test files: $(find tests/ -name '*.bats' 2>/dev/null | wc -l)" >> test-report.txt
