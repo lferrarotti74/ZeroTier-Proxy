@@ -84,10 +84,10 @@ jobs:
             --tag zerotier-proxy:test \
             .
 
-      - name: Install BATS testing framework
+      - name: Install BATS testing framework and docker-compose
         run: |
           sudo apt-get update
-          sudo apt-get install -y bats
+          sudo apt-get install -y bats docker-compose
 
       - name: Install additional testing tools
         run: |
