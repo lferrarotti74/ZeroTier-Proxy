@@ -47,6 +47,12 @@ trap killzerotierproxy INT TERM
 
 DEFAULT_TCP_PORT=443
 
+# If arguments are provided, execute them instead of starting tcp-proxy
+if [ $# -gt 0 ]; then
+  exec "$@"
+fi
+
+# Create local.conf BEFORE starting tcp-proxy so it reads the correct config
 if [ "$ZT_OVERRIDE_LOCAL_CONF" = 'true' ] ; then
   echo "{
     \"settings\": {
@@ -56,6 +62,17 @@ if [ "$ZT_OVERRIDE_LOCAL_CONF" = 'true' ] ; then
 fi
 
 get_pid
+
+# If tcp-proxy is already running and we have a custom config, restart it
+if [ -n "$PID" ] && [ "$ZT_OVERRIDE_LOCAL_CONF" = 'true' ] && [ -n "$ZT_TCP_PORT" ]; then
+  log_detail "Restarting ZeroTier TCP Proxy to apply new configuration"
+  kill "$PID"
+  # Wait for process to stop
+  while kill -0 "$PID" 2>/dev/null; do
+    sleep 0.1
+  done
+  PID=""
+fi
 
 if [ -z "$PID" ]
 then
