@@ -372,7 +372,7 @@ jobs:
           ls -l /tmp/digests
           
       - name: Upload Digest
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: digests-${{ env.PLATFORM_PAIR }}
           path: /tmp/digests/*
@@ -390,7 +390,7 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         
       - name: Download digests
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           path: /tmp/digests
           pattern: digests-*
@@ -589,7 +589,7 @@ jobs:
       # Upload SARIF to GitHub Security
       ######################
       - name: Upload Trivy SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@16140ae1a102900babc80a33c44059580f687047 # v4.30.9
+        uses: github/codeql-action/upload-sarif@4e94bd11f71e507f7f87df81788dff88d1dacbfb # v4.31.0
         if: always()
         with:
           sarif_file: trivy-results.sarif
@@ -599,7 +599,7 @@ jobs:
       # Upload all scan reports
       ######################
       - name: Upload Security Scan Reports
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:
           name: security-reports
           path: |
@@ -665,7 +665,7 @@ jobs:
     steps:
       - name: Download Security Reports
         if: needs.security-scan.result == 'success'
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: security-reports
           path: ./security-reports
