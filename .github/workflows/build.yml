@@ -292,7 +292,7 @@ jobs:
         
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         with:
           images: |
             ${{ env.REGISTRY_IMAGE }}
@@ -429,7 +429,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f # v5.8.0
+        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # v5.9.0
         with:
           images: |
             ${{ env.REGISTRY_IMAGE }}
@@ -589,7 +589,7 @@ jobs:
       # Upload SARIF to GitHub Security
       ######################
       - name: Upload Trivy SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@4e94bd11f71e507f7f87df81788dff88d1dacbfb # v4.31.0
+        uses: github/codeql-action/upload-sarif@0499de31b99561a6d14a36a5f662c2a54f91beee # v4.31.2
         if: always()
         with:
           sarif_file: trivy-results.sarif
