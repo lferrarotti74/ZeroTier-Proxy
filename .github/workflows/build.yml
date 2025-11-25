@@ -537,7 +537,7 @@ jobs:
       ######################
       - name: Grype Scan
         id: grype-scan
-        uses: anchore/scan-action@3aaf50d765cfcceafa51d322ccb790e40f6cd8c5 # v5
+        uses: anchore/scan-action@40a61b52209e9d50e87917c5b901783d546b12d0 # v5
         with:
           image: ${{ env.REGISTRY_IMAGE }}:latest
           output-format: 'json'
@@ -589,7 +589,7 @@ jobs:
       # Upload SARIF to GitHub Security
       ######################
       - name: Upload Trivy SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@e12f0178983d466f2f6028f5cc7a6d786fd97f4b # v4.31.4
+        uses: github/codeql-action/upload-sarif@fdbfb4d2750291e159f0156def62b853c2798ca2 # v4.31.5
         if: always()
         with:
           sarif_file: trivy-results.sarif
