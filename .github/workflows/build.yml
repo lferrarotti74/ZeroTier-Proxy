@@ -239,7 +239,7 @@ jobs:
           fi
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
+        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9 # v7.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
@@ -537,7 +537,7 @@ jobs:
       ######################
       - name: Grype Scan
         id: grype-scan
-        uses: anchore/scan-action@40a61b52209e9d50e87917c5b901783d546b12d0 # v5
+        uses: anchore/scan-action@3c9a191a0fbab285ca6b8530b5de5a642cba332f # v5
         with:
           image: ${{ env.REGISTRY_IMAGE }}:latest
           output-format: 'json'
