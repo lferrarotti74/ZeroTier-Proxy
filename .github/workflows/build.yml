@@ -211,7 +211,7 @@ jobs:
           fetch-depth: 0  # Required for proper blame/coverage tracking
 
       - name: Cache SonarQube packages
-        uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5.0.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
@@ -328,7 +328,7 @@ jobs:
 
       # Add caching for Docker layers
       - name: Cache Docker layers
-        uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5.0.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ matrix.platform.name }}-${{ github.sha }}
@@ -488,7 +488,7 @@ jobs:
           version: 'v0.67.2'  # Updated to latest version with bug fixes
 
       - name: Cache Trivy DB
-        uses: actions/cache@a7833574556fa59680c1b7cb190c1735db73ebf0 # v5.0.0
+        uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
         with:
           path: ~/.cache/trivy
           key: trivy-db-${{ runner.os }}-${{ hashFiles('**/Dockerfile') }}-${{ github.run_id }}
