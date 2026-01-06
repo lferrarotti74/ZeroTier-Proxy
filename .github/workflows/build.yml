@@ -5,7 +5,6 @@ permissions:
   contents: write  # Required for updating variables
   packages: write
   actions: write   # Required for updating repository variables
-  security-events: write  # Required for uploading SARIF results to GitHub Security
 
 on:
   workflow_dispatch:
@@ -464,6 +463,9 @@ jobs:
   security-scan:
     name: Security Scan (Trivy + Grype + OSV)
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     needs: [merge, build]
     if: github.event_name != 'pull_request' && (github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true')
     steps:
