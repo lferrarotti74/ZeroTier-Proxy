@@ -20,31 +20,40 @@ NC='\033[0m' # No Color
 
 # Print colored output
 print_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    local message="$1"
+    echo -e "${GREEN}✅ $message${NC}"
+    return 0
 }
 
 print_error() {
-    echo -e "${RED}❌ $1${NC}"
+    local message="$1"
+    echo -e "${RED}❌ $message${NC}"
+    return 0
 }
 
 print_warning() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    local message="$1"
+    echo -e "${YELLOW}⚠️  $message${NC}"
+    return 0
 }
 
 print_info() {
-    echo -e "ℹ️  $1"
+    local message="$1"
+    echo -e "ℹ️  $message"
+    return 0
 }
 
 # Read version from env file
 get_version_from_env() {
     local env_file="env/.env"
-    if [ -f "$env_file" ]; then
+    if [[ -f "$env_file" ]]; then
         # Extract ZEROTIERPROXY_VERSION from .env file
         grep "^ZEROTIERPROXY_VERSION=" "$env_file" | cut -d'=' -f2 | tr -d '"' | tr -d "'"
     else
         print_warning "Environment file not found: $env_file"
         echo "1.14.2"  # fallback version
     fi
+    return 0
 }
 
 # Build the test image (only if it doesn't exist)
@@ -63,7 +72,7 @@ build_test_image() {
     docker build --build-arg VERSION="$version" -t "$TEST_IMAGE" . >&3 2>&3
     local exit_code=$?
     
-    if [ $exit_code -eq 0 ]; then
+    if [[ $exit_code -eq 0 ]]; then
         print_success "Test image built successfully: $TEST_IMAGE"
     else
         print_error "Failed to build test image: $TEST_IMAGE"
@@ -79,11 +88,13 @@ setup_test_environment() {
     
     # Clean up any existing test containers
     cleanup_test_containers
+    return 0
 }
 
 # Cleanup test environment
 teardown_test_environment() {
     cleanup_test_containers
+    return 0
 }
 
 # Clean up test containers
@@ -91,15 +102,17 @@ cleanup_test_containers() {
     local containers
     containers=$(docker ps -a --filter "name=${TEST_CONTAINER_PREFIX}" --format "{{.Names}}" 2>/dev/null)
     
-    if [ -n "$containers" ]; then
+    if [[ -n "$containers" ]]; then
         echo "Cleaning up test containers: $containers"
         echo "$containers" | xargs -r docker rm -f >/dev/null 2>&1
     fi
+    return 0
 }
 
 # Generate unique container name
 generate_container_name() {
     echo "${TEST_CONTAINER_PREFIX}-$(date +%s)-$$"
+    return 0
 }
 
 # Run container with shell command and capture output
@@ -108,6 +121,7 @@ run_shell_container_output() {
     local extra_args="${2:-}"
     
     docker run --rm ${extra_args} --entrypoint="" "${TEST_IMAGE}" sh -c "${cmd}" 2>&1
+    return $?
 }
 
 # Run container with shell command (no output capture)
@@ -116,6 +130,7 @@ run_shell_container() {
     local extra_args="${2:-}"
     
     docker run --rm ${extra_args} --entrypoint="" "${TEST_IMAGE}" sh -c "${cmd}"
+    return $?
 }
 
 # Run container with entrypoint and capture output
@@ -124,6 +139,7 @@ run_proxy_container_output() {
     local timeout="${2:-5}"
     
     timeout "${timeout}s" docker run --rm ${extra_args} "${TEST_IMAGE}" 2>&1 || true
+    return $?
 }
 
 # Start container in background and return container ID
@@ -132,6 +148,7 @@ start_proxy_container_background() {
     local extra_args="${2:-}"
     
     docker run -d --name "${container_name}" ${extra_args} "${TEST_IMAGE}"
+    return $?
 }
 
 # Wait for container to be healthy
@@ -141,11 +158,11 @@ wait_for_container_healthy() {
     local interval="${3:-2}"
     
     local elapsed=0
-    while [ $elapsed -lt $timeout ]; do
+    while [[ $elapsed -lt $timeout ]]; do
         local health_status
         health_status=$(docker inspect --format='{{.State.Health.Status}}' "${container_name}" 2>/dev/null || echo "none")
         
-        if [ "$health_status" = "healthy" ]; then
+        if [[ "$health_status" == "healthy" ]]; then
             return 0
         fi
         
@@ -164,7 +181,7 @@ wait_for_port() {
     local interval="${4:-1}"
     
     local elapsed=0
-    while [ $elapsed -lt $timeout ]; do
+    while [[ $elapsed -lt $timeout ]]; do
         if docker exec "${container_name}" nc -z localhost "$port" 2>/dev/null; then
             return 0
         fi
@@ -182,6 +199,7 @@ get_container_logs() {
     local lines="${2:-50}"
     
     docker logs --tail "$lines" "$container_name" 2>&1
+    return $?
 }
 
 # Check if container is running
@@ -189,6 +207,7 @@ is_container_running() {
     local container_name="$1"
     
     docker ps --filter "name=${container_name}" --format "{{.Names}}" | grep -q "^${container_name}$"
+    return $?
 }
 
 # Get container exit code
@@ -196,6 +215,7 @@ get_container_exit_code() {
     local container_name="$1"
     
     docker inspect --format='{{.State.ExitCode}}' "$container_name" 2>/dev/null || echo "255"
+    return 0
 }
 
 # Validate JSON output
@@ -203,6 +223,7 @@ validate_json() {
     local json_string="$1"
     
     echo "$json_string" | jq . >/dev/null 2>&1
+    return $?
 }
 
 # Check if string contains pattern
@@ -211,6 +232,7 @@ contains_pattern() {
     local pattern="$2"
     
     [[ "$string" =~ $pattern ]]
+    return $?
 }
 
 # Check file permissions in container
@@ -222,7 +244,8 @@ check_file_permissions() {
     local actual_perms
     actual_perms=$(run_shell_container_output "stat -c '%a' '${file_path}'" "$extra_args")
     
-    [ "$actual_perms" = "$expected_perms" ]
+    [[ "$actual_perms" == "$expected_perms" ]]
+    return $?
 }
 
 # Check file ownership in container
@@ -235,7 +258,8 @@ check_file_ownership() {
     local ownership_info
     ownership_info=$(run_shell_container_output "stat -c '%U:%G' '${file_path}'" "$extra_args")
     
-    [ "$ownership_info" = "${expected_owner}:${expected_group}" ]
+    [[ "$ownership_info" == "${expected_owner}:${expected_group}" ]]
+    return $?
 }
 
 # Check if process is running in container
@@ -244,6 +268,7 @@ check_process_running() {
     local process_name="$2"
     
     docker exec "$container_name" pgrep "$process_name" >/dev/null 2>&1
+    return $?
 }
 
 # Get process count in container
@@ -252,6 +277,7 @@ get_process_count() {
     local process_name="$2"
     
     docker exec "$container_name" pgrep -c "$process_name" 2>/dev/null || echo "0"
+    return 0
 }
 
 # Test network connectivity from container
@@ -262,6 +288,7 @@ test_network_connectivity() {
     local timeout="${4:-5}"
     
     docker exec "$container_name" timeout "$timeout" nc -z "$host" "$port" 2>/dev/null
+    return $?
 }
 
 # Create test configuration file
@@ -275,6 +302,7 @@ create_test_config() {
     }
 }
 EOF
+    return 0
 }
 
 # Validate container security settings
@@ -285,7 +313,7 @@ validate_container_security() {
     local user_id
     user_id=$(docker exec "$container_name" id -u 2>/dev/null)
     
-    if [ "$user_id" != "0" ]; then
+    if [[ "$user_id" != "0" ]]; then
         print_success "Container running as non-root user (UID: $user_id)"
         return 0
     else
@@ -307,6 +335,7 @@ check_container_resources() {
     
     echo "Memory limit: ${memory_limit:-unlimited}"
     echo "CPU shares: ${cpu_limit:-default}"
+    return 0
 }
 
 # Validate environment variables
@@ -319,12 +348,13 @@ validate_environment_variables() {
         local var_value
         var_value=$(docker exec "$container_name" printenv "$var" 2>/dev/null || echo "")
         
-        if [ -n "$var_value" ]; then
+        if [[ -n "$var_value" ]]; then
             print_success "Environment variable $var is set: $var_value"
         else
             print_warning "Environment variable $var is not set"
         fi
     done
+    return 0
 }
 
 # Test container with different configurations
@@ -349,9 +379,11 @@ test_container_with_config() {
     cleanup_config_test() {
         docker rm -f "$container_name" >/dev/null 2>&1 || true
         rm -f "$temp_config"
+        return 0
     }
     
     echo "$container_name"
+    return 0
 }
 
 # Export functions for use in BATS tests
