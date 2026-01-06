@@ -561,7 +561,7 @@ jobs:
       ######################
       - name: Install Syft (SBOM generator)
         run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh
+          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh
           # Add syft to PATH for subsequent steps
           echo "$PWD/bin" >> $GITHUB_PATH
 
@@ -571,7 +571,7 @@ jobs:
       - name: Run OSV Scanner on Container Image
         run: |
           # Download and install OSV Scanner
-          curl -L -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
+          curl --proto "=https" --tlsv1.2 -L -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
           chmod +x osv-scanner
           
           # Run OSV Scanner on the container image
