@@ -14,7 +14,7 @@ fi
 
 # Check if nc command exists and is functional
 if ! command -v nc >/dev/null 2>&1; then
-    echo "Error: netcat (nc) command not found"
+    echo "Error: netcat (nc) command not found" >&2
     exit 1
 fi
 
@@ -23,7 +23,7 @@ fi
 nc -h >/dev/null 2>&1
 nc_help_exit=$?
 if [ $nc_help_exit -eq 127 ]; then
-    echo "Error: netcat (nc) command is not functional (exit code 127)"
+    echo "Error: netcat (nc) command is not functional (exit code 127)" >&2
     exit 1
 fi
 
