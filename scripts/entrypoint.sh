@@ -14,6 +14,7 @@ killzerotierproxy() {
   log "Killing Zerotier TCP Proxy"
   kill "$(cat /var/lib/zerotier-one/zerotier-proxy.pid 2>/dev/null)"
   exit 0
+  return 0
 }
 
 log_header() {
