@@ -1,9 +1,5 @@
 name: Build release image
 
-# Add permissions block
-permissions:
-  contents: read
-
 on:
   workflow_dispatch:
     inputs:
