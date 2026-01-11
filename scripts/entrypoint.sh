@@ -2,6 +2,7 @@
 
 get_pid() {
   PID=$(pidof /usr/sbin/tcp-proxy)
+  return 0
 }
 
 grepzt() {
@@ -17,30 +18,36 @@ killzerotierproxy() {
 
 log_header() {
   printf "\r=>\n" 
+  return 0
 }
 
 log_detail_header() {
   printf "\r===>\n"
+  return 0
 }
 
 log() {
   echo "$(log_header)" "$@"
+  return 0
 }
 
 log_params() {
   title=$1
   shift
   log "$title" "[$@]"
+  return 0
 }
 
 log_detail() {
   echo "$(log_detail_header)" "$@"
+  return 0
 }
 
 log_detail_params() {
   title=$1
   shift
   log_detail "$title" "[$@]"
+  return 0
 }
 
 trap killzerotierproxy INT TERM
