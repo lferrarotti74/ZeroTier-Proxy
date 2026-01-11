@@ -11,7 +11,7 @@ ARG VERSION=1.14.2 //Default value provided
 RUN apk --no-cache update && apk --no-cache upgrade \
     && apk --no-cache --update add alpine-sdk clang git linux-headers make \
     && rm -rf /var/cache/apk/* \
-    && git clone -b ${VERSION} --depth 1 https://github.com/zerotier/ZeroTierOne.git
+    && git clone -b "${VERSION}" --depth 1 https://github.com/zerotier/ZeroTierOne.git
 WORKDIR /ZeroTierOne/tcp-proxy
 
 COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
