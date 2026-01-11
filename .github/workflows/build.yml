@@ -2,9 +2,7 @@ name: Build release image
 
 # Add permissions block
 permissions:
-  contents: write  # Required for updating variables
-  packages: write
-  actions: write   # Required for updating repository variables
+  contents: read
 
 on:
   workflow_dispatch:
@@ -248,6 +246,9 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     # Only run if it's not a scheduled run, OR if it's scheduled and base image updated
     if: github.event_name != 'schedule' || needs.check-base-image.outputs.should_build == 'true'
     needs: [check-base-image]
@@ -380,6 +381,9 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     needs: 
       - build
       - check-base-image
