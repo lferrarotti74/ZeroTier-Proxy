@@ -62,7 +62,7 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v5.2.0
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.2.0
 
       - name: Set Environment
         uses: c-py/action-dotenv-to-setenv@925b5d99a3f1e4bd7b4e9928be4e2491e29891d9 # v5
