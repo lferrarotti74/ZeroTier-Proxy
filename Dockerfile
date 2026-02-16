@@ -54,12 +54,12 @@ RUN echo "${VERSION}" > /etc/zerotier-version \
     && apk --no-cache update \
     && apk --no-cache upgrade \
     && apk --no-cache --update add \
-        curl \
         fping \
         iproute2 \
         iputils-arping \
         iputils-ping \
         jq \
+        libcurl \
         libgcc \
         libstdc++ \
         mtr \

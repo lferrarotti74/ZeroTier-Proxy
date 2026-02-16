@@ -9,3 +9,9 @@ logs/
 **/*.class
 # Ignore the env directory
 env/
+# Ignore local docker-compose helper files
+docker-compose.cloud-firewall.yml
+docker-compose.nat-example.yml
+docker-compose.tcp-port.yml
+docker-compose.standard.yml
+docker-compose-README.md
