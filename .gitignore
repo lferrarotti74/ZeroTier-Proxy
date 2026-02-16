@@ -19,6 +19,13 @@
 # =============================================================================
 repository-security-checklist.md
 
+# Local docker-compose helper files (not for GitHub)
+docker-compose.cloud-firewall.yml
+docker-compose.nat-example.yml
+docker-compose.tcp-port.yml
+docker-compose.standard.yml
+docker-compose-README.md
+
 # =============================================================================
 # OPERATING SYSTEM GENERATED FILES
 # =============================================================================
