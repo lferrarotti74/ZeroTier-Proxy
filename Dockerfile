@@ -7,25 +7,31 @@ ARG CACHEBUST=1
 
 # ZeroTier version - Updated to 1.14.2 to support tcpPort configuration in local.conf
 ARG VERSION=1.14.2 //Default value provided
+ARG REPO="https://github.com/zerotier/ZeroTierOne.git"
+ARG MAKE_TARGET=
+ARG APPLY_PATCHES="true"
 
 RUN apk --no-cache update && apk --no-cache upgrade \
     && apk --no-cache --update add alpine-sdk clang git linux-headers make \
     && rm -rf /var/cache/apk/* \
-    && git clone -b "${VERSION}" --depth 1 https://github.com/zerotier/ZeroTierOne.git
+    && git clone -b "${VERSION}" --depth 1 "${REPO}"
 WORKDIR /ZeroTierOne/tcp-proxy
 
 COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
 COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
 
 RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
-    if [ "$VER" -lt "1140" ]; then \
+    if [ "$APPLY_PATCHES" = "true" ] && [ "$VER" -lt "1140" ]; then \
         patch --verbose -u Makefile -i patchMakefile.patch; \
         sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
-        /usr/bin/make -j$(nproc); \
-    else \
+    elif [ "$APPLY_PATCHES" = "true" ]; then \
         patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch; \
         sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
-        /usr/bin/make -j$(nproc); \
+    fi; \
+    if [ -n "$MAKE_TARGET" ]; then \
+        /usr/bin/make "$MAKE_TARGET" -j"$(nproc)"; \
+    else \
+        /usr/bin/make -j"$(nproc)"; \
     fi
 
 FROM alpine:3
