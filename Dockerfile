@@ -28,7 +28,11 @@ RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
         patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch; \
         sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
     fi; \
-    /usr/bin/make ${MAKE_TARGET} -j"$(nproc)"
+    if [ -n "$MAKE_TARGET" ]; then \
+        /usr/bin/make "$MAKE_TARGET" -j"$(nproc)"; \
+    else \
+        /usr/bin/make -j"$(nproc)"; \
+    fi
 
 FROM alpine:3
 
