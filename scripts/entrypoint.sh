@@ -52,12 +52,14 @@ log_detail_params() {
 }
 
 log_info() {
-  echo "[INFO] $1"
+  local message="$1"
+  echo "[INFO] $message"
   return 0
 }
 
 log_error() {
-  echo "[ERROR] $1" >&2
+  local message="$1"
+  echo "[ERROR] $message" >&2
   return 0
 }
 
@@ -157,6 +159,9 @@ generate_cloud_config() {
       config="$config\n    }"
       ;;
     linode)
+      ;;
+    *)
+      log_error "Unsupported cloud provider: $provider"
       ;;
   esac
 
