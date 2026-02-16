@@ -12,7 +12,7 @@ ARG MAKE_TARGET=
 ARG APPLY_PATCHES="true"
 
 RUN apk --no-cache update && apk --no-cache upgrade \
-    && apk --no-cache --update add alpine-sdk clang git linux-headers make \
+    && apk --no-cache --update add alpine-sdk clang curl-dev git linux-headers make \
     && rm -rf /var/cache/apk/* \
     && git clone -b "${VERSION}" --depth 1 "${REPO}"
 WORKDIR /ZeroTierOne/tcp-proxy
@@ -23,11 +23,10 @@ COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
 RUN export VER=$(echo "$VERSION" | sed 's/\.//g'); \
     if [ "$APPLY_PATCHES" = "true" ] && [ "$VER" -lt "1140" ]; then \
         patch --verbose -u Makefile -i patchMakefile.patch; \
-        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
     elif [ "$APPLY_PATCHES" = "true" ]; then \
         patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch; \
-        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
     fi; \
+    sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp; \
     if [ -n "$MAKE_TARGET" ]; then \
         /usr/bin/make "$MAKE_TARGET" -j"$(nproc)"; \
     else \
@@ -55,6 +54,7 @@ RUN echo "${VERSION}" > /etc/zerotier-version \
     && apk --no-cache update \
     && apk --no-cache upgrade \
     && apk --no-cache --update add \
+        curl \
         fping \
         iproute2 \
         iputils-arping \
