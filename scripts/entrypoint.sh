@@ -196,10 +196,6 @@ generate_local_conf() {
     config="$config    \"cloudFirewallId\": \"$ZT_LINODE_FIREWALL_ID\""
   fi
 
-  if [ "$ZT_LOG_STDOUT" = "true" ]; then
-    config="$config,\n    \"logStdout\": true"
-  fi
-
   config="$config\n  }\n}"
   printf "%b\n" "$config"
   return 0

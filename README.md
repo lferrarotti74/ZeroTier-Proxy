@@ -43,6 +43,14 @@ For detailed licensing information, please refer to:
 
 ## Quick Start
 
+### Available Images
+
+- `lferrarotti74/zerotier-proxy:latest`  
+  Standard image based on ZeroTier One v1.14.2. Recommended for most environments that only need TCP fallback relay functionality.
+
+- `lferrarotti74/zerotier-proxy:feature-cloud-provider-firewall-manager`  
+  Advanced variant that adds optional Cloud Firewall Manager integration for selected cloud providers (Linode, AWS, Azure, GCP). Use this only if you need automatic firewall rule management.
+
 ### Pull the Docker Image
 
 ```bash
@@ -86,6 +94,39 @@ If you control the network infrastructure, redirect the default ZeroTier TCP rel
 iptables -t nat -A PREROUTING -p tcp -d 204.80.128.1 --dport 443 -j DNAT --to-destination YOUR_PROXY_SERVER_IP:8443
 iptables -t nat -A POSTROUTING -p tcp -d YOUR_PROXY_SERVER_IP --dport 8443 -j SNAT --to-source 204.80.128.1
 ```
+
+### Run the Cloud Firewall–Enabled Image (Optional)
+
+Use the cloud-enabled image when you want the proxy to automatically manage firewall rules on a supported cloud provider.  
+Below is an example using Linode as provider with placeholder values:
+
+```bash
+docker run -d --name zerotier-proxy-cloud --restart unless-stopped \
+  -p 8443:8443 \
+  -e ZT_TCP_PORT=8443 \
+  -e ZT_EXT_TCP_PORT=443 \
+  -e ZT_OVERRIDE_LOCAL_CONF=true \
+  -e ZT_CLOUD_PROVIDER=linode \
+  -e ZT_CLOUD_API_TOKEN=EXAMPLE_LINODE_API_TOKEN \
+  -e ZT_CLOUD_FIREWALL_ID=EXAMPLE_LINODE_FIREWALL_ID \
+  lferrarotti74/zerotier-proxy:feature-cloud-provider-firewall-manager
+```
+
+This will generate a `local.conf` similar to:
+
+```json
+{
+  "settings": {
+    "tcpPort": 8443,
+    "externalTcpPort": 443,
+    "cloudProvider": "linode",
+    "cloudApiToken": "EXAMPLE_LINODE_API_TOKEN",
+    "cloudFirewallId": "EXAMPLE_LINODE_FIREWALL_ID"
+  }
+}
+```
+
+Replace the placeholder values with your real API token and firewall ID only in your own environment, and do not commit real secrets to version control.
 
 ## Usage Examples
 
@@ -192,7 +233,7 @@ docker-compose up -d
 For debugging and monitoring, you can access the container:
 
 ```bash
-docker exec -it zerotier-proxy /bin/bash
+docker exec -it zerotier-proxy /bin/sh
 ```
 
 Then inside the container:
@@ -207,6 +248,46 @@ netstat -tlnp
 # View logs
 docker logs zerotier-proxy
 ```
+
+## Cloud Firewall Manager Configuration
+
+The cloud-enabled image can manage firewall rules on supported providers when configured via environment variables.  
+At minimum you must set:
+
+- `ZT_OVERRIDE_LOCAL_CONF=true` – enable generation of `local.conf` from environment
+- `ZT_TCP_PORT` – internal TCP port for the proxy (default: `443` if unset)
+- `ZT_EXT_TCP_PORT` – external TCP port exposed to clients (useful for NAT/port forwarding)
+- `ZT_CLOUD_PROVIDER` – one of: `linode`, `aws`, `azure`, `gcp`
+
+### Common Cloud Environment Variables
+
+For all cloud providers:
+
+- `ZT_CLOUD_API_TOKEN` – API token for the provider
+- `ZT_CLOUD_FIREWALL_ID` – Identifier of the firewall or security group to manage
+
+Provider-specific variables:
+
+- **Linode**
+  - If `ZT_CLOUD_PROVIDER=linode` is set, no additional variables are required.
+  - Alternatively, if `ZT_CLOUD_PROVIDER` is not set, the proxy can also use:
+    - `ZT_LINODE_API_TOKEN`
+    - `ZT_LINODE_FIREWALL_ID`
+
+- **AWS**
+  - `ZT_CLOUD_AWS_REGION`
+  - `ZT_CLOUD_AWS_SECRET_KEY`
+
+- **Azure**
+  - `ZT_CLOUD_AZURE_TENANT_ID`
+  - `ZT_CLOUD_AZURE_SUBSCRIPTION_ID`
+  - `ZT_CLOUD_AZURE_RESOURCE_GROUP`
+
+- **GCP**
+  - `ZT_CLOUD_GCP_PROJECT_ID`
+  - Optional: `ZT_CLOUD_GCP_NETWORK`
+
+If required variables are missing or an unsupported provider is specified, the container will log an error and fall back to a basic configuration without cloud integration.
 
 ## Available Commands
 
@@ -336,7 +417,7 @@ For the most current licensing information, please refer to:
 - **[ZeroTier Official Website](https://www.zerotier.com/)** - Official ZeroTier website and services
 - **[ZeroTier Documentation](https://docs.zerotier.com/)** - Comprehensive ZeroTier documentation
 - **[ZeroTier Pricing](https://www.zerotier.com/pricing/)** - Licensing and pricing information
-- **[Docker Hub Repository](https://hub.docker.com/r/lferrarotti74/zerotier)** - Pre-built Docker images
+- **[Docker Hub Repository](https://hub.docker.com/r/lferrarotti74/zerotier-proxy)** - Pre-built Docker images
 
 ## Acknowledgments
 
@@ -349,4 +430,4 @@ For the most current licensing information, please refer to:
 ---
 
 **Maintainer:** Luca Ferrarotti (luca@ferrarotti.it)  
-**Last Updated:** January 2025
+**Last Updated:** February 2026
