@@ -485,9 +485,9 @@ jobs:
       # Manual Trivy Setup
       ######################
       - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.0
+        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.5
         with:
-          version: 'v0.67.2'  # Updated to latest version with bug fixes
+          version: 'v0.69.2'  # Use this version as suggested in https://github.com/aquasecurity/setup-trivy/issues/30
 
       - name: Cache Trivy DB
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
