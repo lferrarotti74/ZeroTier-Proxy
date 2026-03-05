@@ -2,7 +2,7 @@ name: Dependabot reviewer
 
 on: 
   pull_request_target: # Use pull_request_target
-    branches: [main]
+    branches: [dev]
 
 permissions:
   pull-requests: write

@@ -14,6 +14,7 @@ updates:
       day: "saturday"
       # Check when starting the updates
       time: "04:00"
+    target-branch: "dev"
     # Enable a limit for pull requests for Docker dependencies
     open-pull-requests-limit: 10
 
@@ -23,6 +24,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    target-branch: "dev"
     open-pull-requests-limit: 10
     ignore:
     - dependency-name: "softprops/action-gh-release"
