@@ -575,7 +575,7 @@ jobs:
           # Validate SARIF file is not empty/invalid JSON
           if [ ! -s osv-results.sarif ] || ! jq empty osv-results.sarif >/dev/null 2>&1; then
             echo "Warning: OSV-Scanner failed to generate valid SARIF or found no issues."
-            echo "{ \"version\": \"2.1.0\", \"runs\": [] }" > osv-results.sarif
+            echo '{ "version": "2.1.0", "runs": [{"tool": {"driver": {"name": "OSV-Scanner"}}, "results": []}] }' > osv-results.sarif
           fi
 
       ######################
