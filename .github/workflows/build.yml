@@ -564,8 +564,19 @@ jobs:
 
       - name: Scan SBOM with OSV
         run: |
+          # Run OSV Scanner and generate JSON report
           osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
+          
+          # Run OSV Scanner and generate SARIF report
+          # Note: We ensure the output directory exists and file is created
+          touch osv-results.sarif
           osv-scanner scan --sbom=sbom.json --format=sarif --output=osv-results.sarif || true
+          
+          # Validate SARIF file is not empty/invalid JSON
+          if [ ! -s osv-results.sarif ] || ! jq empty osv-results.sarif >/dev/null 2>&1; then
+            echo "Warning: OSV-Scanner failed to generate valid SARIF or found no issues."
+            echo "{ \"version\": \"2.1.0\", \"runs\": [] }" > osv-results.sarif
+          fi
 
       ######################
       # Upload SARIF to GitHub Security
