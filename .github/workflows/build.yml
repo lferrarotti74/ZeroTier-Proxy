@@ -565,7 +565,8 @@ jobs:
       - name: Scan SBOM with OSV
         run: |
           # Run OSV Scanner and generate JSON report
-          osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
+          # osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
+          osv-scanner scan --sbom=sbom.json --format json | tee osv-report.json || true
           
           # Run OSV Scanner and generate SARIF report
           # Note: We ensure the output directory exists and file is created
