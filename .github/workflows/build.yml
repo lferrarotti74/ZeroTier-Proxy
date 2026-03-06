@@ -545,6 +545,7 @@ jobs:
         run: |
           grype ${{ env.REGISTRY_IMAGE }}:latest -o json > grype-report.json || true
           grype ${{ env.REGISTRY_IMAGE }}:latest -o table > grype-report.txt || true
+          grype ${{ env.REGISTRY_IMAGE }}:latest -o sarif > grype-results.sarif || true
 
       ######################
       # OSV-Scanner for app dependencies
@@ -562,7 +563,9 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Scan SBOM with OSV
-        run: osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
+        run: |
+          osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
+          osv-scanner scan --sbom=sbom.json --format=sarif --output=osv-results.sarif || true
 
       ######################
       # Upload SARIF to GitHub Security
@@ -573,6 +576,20 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
           category: trivy-container-scan
+
+      - name: Upload Grype SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: grype-results.sarif
+          category: grype-container-scan
+
+      - name: Upload OSV SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # v4.32.6
+        if: always()
+        with:
+          sarif_file: osv-results.sarif
+          category: osv-sbom-scan
 
       ######################
       # Upload all scan reports
@@ -587,9 +604,11 @@ jobs:
             trivy-secrets.txt
             grype-report.json
             grype-report.txt
+            grype-results.sarif
             sbom.json
             osv-report.json
-          retention-days: 30
+            osv-results.sarif
+          retention-days: 1
 
   # NEW: Update stored Alpine digest after successful build
   # Updated update-digest job
