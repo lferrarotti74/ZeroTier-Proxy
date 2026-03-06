@@ -558,7 +558,8 @@ jobs:
 
       - name: Install OSV Scanner
         run: |
-          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh | sh -s -- -b /usr/local/bin
+          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Scan SBOM with OSV
         run: osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
