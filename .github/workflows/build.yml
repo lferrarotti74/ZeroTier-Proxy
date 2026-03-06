@@ -472,7 +472,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.2.0
 
-      - name: Log in to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -537,55 +537,31 @@ jobs:
       ######################
       # Grype Scan
       ######################
-      - name: Grype Scan
-        id: grype-scan
-        uses: anchore/scan-action@7037fa011853d5a11690026fb85feee79f4c946c # v5
-        with:
-          image: ${{ env.REGISTRY_IMAGE }}:latest
-          output-format: 'json'
-          fail-build: false
-
-      - name: Save Grype Report
+      - name: Install Grype
         run: |
-          # The action outputs the JSON report path, let's copy it to our expected filename
-          if [ -f "${{ steps.grype-scan.outputs.json }}" ]; then
-            cp "${{ steps.grype-scan.outputs.json }}" grype-report.json
-            echo "✅ Grype report saved as grype-report.json"
-          else
-            echo "⚠️ Grype JSON report not found, creating empty report"
-            echo '{"matches": []}' > grype-report.json
-          fi
+          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Run Grype vulnerability scanner
+        run: |
+          grype ${{ env.REGISTRY_IMAGE }}:latest -o json > grype-report.json || true
+          grype ${{ env.REGISTRY_IMAGE }}:latest -o table > grype-report.txt || true
 
       ######################
       # OSV-Scanner for app dependencies
       ######################
       - name: Install Syft (SBOM generator)
         run: |
-          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh
-          # Add syft to PATH for subsequent steps
-          echo "$PWD/bin" >> $GITHUB_PATH
+          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Generate SBOM
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o json > sbom.json
 
-      - name: Run OSV Scanner on Container Image
+      - name: Install OSV Scanner
         run: |
-          # Download and install OSV Scanner
-          curl --proto "=https" --tlsv1.2 -L -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
-          chmod +x osv-scanner
-          
-          # Run OSV Scanner on the container image
-          echo "🔍 Scanning container image: ${{ env.REGISTRY_IMAGE }}:latest"
-          ./osv-scanner scan image ${{ env.REGISTRY_IMAGE }}:latest --format=json --output=osv-report.json || true
-          
-          # Verify output file exists
-          if [ -f osv-report.json ]; then
-            echo "✅ OSV Scanner completed successfully"
-            echo "📄 Container image scan report saved as osv-report.json"
-          else
-            echo "⚠️ OSV Scanner report not found, creating empty report"
-            echo '{"results": []}' > osv-report.json
-          fi
+          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/google/osv-scanner/main/install.sh | sh -s -- -b /usr/local/bin
+
+      - name: Scan SBOM with OSV
+        run: osv-scanner scan --sbom=sbom.json --format=json --output=osv-report.json || true
 
       ######################
       # Upload SARIF to GitHub Security
@@ -609,6 +585,7 @@ jobs:
             trivy-results.sarif
             trivy-secrets.txt
             grype-report.json
+            grype-report.txt
             sbom.json
             osv-report.json
           retention-days: 30
