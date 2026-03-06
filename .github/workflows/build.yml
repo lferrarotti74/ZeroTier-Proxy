@@ -555,20 +555,19 @@ jobs:
           curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
       - name: Generate SBOM
-        # run: syft ${{ env.REGISTRY_IMAGE }}:latest -o json > sbom.json
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o cyclonedx-json > cyclonedx.sbom.json
 
       - name: Install OSV Scanner
         run: |
-          go install github.com/google/osv-scanner/cmd/osv-scanner@latest
+          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Scan SBOM with OSV
         run: |
-          osv-scanner scan -L cyclonedx.sbom.json --format json | tee osv-report.json || true
+          osv-scanner scan source --sbom=cyclonedx.sbom.json --format json --output osv-report.json || true
 
           touch osv-results.sarif
-          osv-scanner scan -L cyclonedx.sbom.json --format sarif --output osv-results.sarif || true
+          osv-scanner scan source --sbom=cyclonedx.sbom.json --format sarif --output osv-results.sarif || true
 
           if [ ! -s osv-results.sarif ] || ! jq empty osv-results.sarif >/dev/null 2>&1; then
             echo "Warning: OSV-Scanner failed to generate valid SARIF or found no issues."
