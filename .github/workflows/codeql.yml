@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'go' ]
+        language: [ 'c-cpp' ]
 
     steps:
     - name: Checkout repository
@@ -41,8 +41,58 @@ jobs:
 
     # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+    # - name: Autobuild
+    #   uses: github/codeql-action/autobuild@v3
+    
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
+    - name: Build
+      run: |
+        sudo apt-get update && sudo apt-get install -y make clang git libcurl4-openssl-dev
+        
+        # Clone ZeroTierOne repo as expected by the patches
+        git clone -b "1.14.2" --depth 1 "https://github.com/zerotier/ZeroTierOne.git" ZeroTierOne
+        
+        # The Dockerfile sets WORKDIR /ZeroTierOne/tcp-proxy, so we need to replicate that structure
+        # In the repo, tcp-proxy is a subdirectory of ZeroTierOne? No, let's check the Dockerfile.
+        # Dockerfile says: 
+        # git clone ... "${REPO}" (which is ZeroTierOne.git)
+        # WORKDIR /ZeroTierOne/tcp-proxy
+        # COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
+        # COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
+        
+        # Wait, the repo structure of ZeroTierOne DOES NOT have a tcp-proxy folder by default?
+        # Ah, looking at the Dockerfile again:
+        # WORKDIR /ZeroTierOne/tcp-proxy -> This implies the folder exists inside the cloned repo OR it is created.
+        # But wait, the user's repo has a tcp-proxy folder.
+        
+        # Let's look at the Dockerfile carefully:
+        # 17: git clone ... "${REPO}" (clones into /ZeroTierOne)
+        # 18: WORKDIR /ZeroTierOne/tcp-proxy
+        # 20: COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
+        
+        # This implies that the 'tcp-proxy' folder exists in the cloned ZeroTierOne repo.
+        # However, the user's repo ALSO has a 'tcp-proxy' folder with patches.
+        
+        # Let's adjust the build script to match the Dockerfile logic exactly using the runner's filesystem.
+        
+        # 1. Clone the dependency
+        git clone -b "1.14.2" --depth 1 "https://github.com/zerotier/ZeroTierOne.git" ZeroTierOne
+        
+        # 2. Copy the patches from the current repo (checked out at .) into the cloned repo's tcp-proxy dir
+        cp tcp-proxy/patchMakefile.patch ZeroTierOne/tcp-proxy/patchMakefile.patch
+        cp tcp-proxy/patchTcpProxy.patch ZeroTierOne/tcp-proxy/patchTcpProxy.patch
+        
+        # 3. Enter the directory
+        cd ZeroTierOne/tcp-proxy
+        
+        # 4. Apply patches and build
+        export VER=$(echo "1.14.2" | sed 's/\.//g')
+        patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch
+        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp
+        
+        make -j"$(nproc)"
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
