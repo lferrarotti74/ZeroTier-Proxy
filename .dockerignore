@@ -7,6 +7,7 @@ logs/
 #Ingore all markdown and class files
 *.md
 **/*.class
+SECURITY_IMPLEMENTATION_SUMMARY.md
 # Ignore the env directory
 env/
 # Ignore local docker-compose helper files

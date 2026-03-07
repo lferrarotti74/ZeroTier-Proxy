@@ -18,6 +18,7 @@
 # PROJECT-SPECIFIC DOCUMENTATION AND SECURITY FILES (EXCLUDE FROM SYNC)
 # =============================================================================
 repository-security-checklist.md
+SECURITY_IMPLEMENTATION_SUMMARY.md
 
 # Local docker-compose helper files (not for GitHub)
 docker-compose.cloud-firewall.yml
