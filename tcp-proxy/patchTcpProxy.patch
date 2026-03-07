@@ -30,11 +30,11 @@
 +{
 +	va_list ap;
 +	time_t timer;
-+	struct tm * timeinfo;
++	struct tm timeinfo;		// ✅ stack-allocated, not a pointer
 +	char buffer [100];
 +	time(&timer);
-+	timeinfo = localtime (&timer);
-+	strftime (buffer,100,"[%c] ",timeinfo);
++	localtime_r(&timer, &timeinfo);		// ✅ thread-safe
++	strftime (buffer,100,"[%c] ",&timeinfo);	// ✅ pass address
 +	va_start(ap, fmt);
 +	fprintf(stream, "%s", buffer);
 +	vfprintf(stream, fmt, ap);
