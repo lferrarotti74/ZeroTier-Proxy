@@ -13,6 +13,9 @@
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=lferrarotti74_ZeroTier-Proxy&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=lferrarotti74_ZeroTier-Proxy)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=lferrarotti74_ZeroTier-Proxy&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=lferrarotti74_ZeroTier-Proxy)
 
+<!-- CodeQL Badge -->
+[![CodeQL](https://github.com/lferrarotti74/ZeroTier-Proxy/actions/workflows/codeql.yml/badge.svg)](https://github.com/lferrarotti74/ZeroTier-Proxy/actions/workflows/codeql.yml)
+
 A Docker container for the [ZeroTier TCP Proxy](https://github.com/zerotier/ZeroTierOne/tree/dev/tcp-proxy), designed to help ZeroTier peers behind difficult NATs establish connections. This containerized TCP relay server reduces latency and improves connectivity for ZeroTier networks in challenging network environments.
 
 ## What is ZeroTier TCP Proxy?
