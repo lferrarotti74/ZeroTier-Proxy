@@ -27,17 +27,17 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
+        build-mode: manual
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file.
         # Prefix the list here with "+" to use these queries and those in the config file.
         
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-        # queries: security-extended,security-and-quality
+        queries: security-extended,security-and-quality
 
     # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
     # If this step fails, then you should remove it and run the build manually (see below)
@@ -51,44 +51,21 @@ jobs:
       run: |
         sudo apt-get update && sudo apt-get install -y make clang git libcurl4-openssl-dev
         
-        # Clone ZeroTierOne repo as expected by the patches
+        # 1. Clean previous run artifacts
         rm -rf ZeroTierOne
+
+        # 2. Clone the dependency
         git clone -b "1.14.2" --depth 1 "https://github.com/zerotier/ZeroTierOne.git" ZeroTierOne
         
-        # The Dockerfile sets WORKDIR /ZeroTierOne/tcp-proxy, so we need to replicate that structure
-        # In the repo, tcp-proxy is a subdirectory of ZeroTierOne? No, let's check the Dockerfile.
-        # Dockerfile says: 
-        # git clone ... "${REPO}" (which is ZeroTierOne.git)
-        # WORKDIR /ZeroTierOne/tcp-proxy
-        # COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
-        # COPY tcp-proxy/patchTcpProxy.patch patchTcpProxy.patch
-        
-        # Wait, the repo structure of ZeroTierOne DOES NOT have a tcp-proxy folder by default?
-        # Ah, looking at the Dockerfile again:
-        # WORKDIR /ZeroTierOne/tcp-proxy -> This implies the folder exists inside the cloned repo OR it is created.
-        # But wait, the user's repo has a tcp-proxy folder.
-        
-        # Let's look at the Dockerfile carefully:
-        # 17: git clone ... "${REPO}" (clones into /ZeroTierOne)
-        # 18: WORKDIR /ZeroTierOne/tcp-proxy
-        # 20: COPY tcp-proxy/patchMakefile.patch patchMakefile.patch
-        
-        # This implies that the 'tcp-proxy' folder exists in the cloned ZeroTierOne repo.
-        # However, the user's repo ALSO has a 'tcp-proxy' folder with patches.
-        
-        # Let's adjust the build script to match the Dockerfile logic exactly using the runner's filesystem.
-        
-        # 1. Clone the dependency
-        git clone -b "1.14.2" --depth 1 "https://github.com/zerotier/ZeroTierOne.git" ZeroTierOne
-        
-        # 2. Copy the patches from the current repo (checked out at .) into the cloned repo's tcp-proxy dir
+        # 3. Ensure tcp-proxy dir exists and copy the patches from the current repo (checked out at .) into the cloned repo's tcp-proxy dir
+        mkdir -p ZeroTierOne/tcp-proxy
         cp tcp-proxy/patchMakefile.patch ZeroTierOne/tcp-proxy/patchMakefile.patch
         cp tcp-proxy/patchTcpProxy.patch ZeroTierOne/tcp-proxy/patchTcpProxy.patch
         
-        # 3. Enter the directory
+        # 4. Enter the directory
         cd ZeroTierOne/tcp-proxy
         
-        # 4. Apply patches and build
+        # 5. Apply patches and build
         export VER=$(echo "1.14.2" | sed 's/\.//g')
         patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch
         sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp
@@ -106,6 +83,6 @@ jobs:
     #     ./location_of_script_within_repo/buildscript.sh
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         category: "/language:${{matrix.language}}"
