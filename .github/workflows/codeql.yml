@@ -1,0 +1,88 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: [ "main", "master", "dev" ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ "main", "master", "dev" ]
+  schedule:
+    - cron: '30 1 * * 0'
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'c-cpp' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ matrix.language }}
+        build-mode: manual
+        # If you wish to specify custom queries, you can do so here or in a config file.
+        # By default, queries listed here will override any specified in a config file.
+        # Prefix the list here with "+" to use these queries and those in the config file.
+        
+        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+        queries: security-extended,security-and-quality
+
+    # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
+    # If this step fails, then you should remove it and run the build manually (see below)
+    # - name: Autobuild
+    #   uses: github/codeql-action/autobuild@v3
+    
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
+    - name: Build
+      run: |
+        sudo apt-get update && sudo apt-get install -y make clang git libcurl4-openssl-dev
+        
+        # 1. Clean previous run artifacts
+        rm -rf ZeroTierOne
+
+        # 2. Clone the dependency
+        git clone -b "1.14.2" --depth 1 "https://github.com/zerotier/ZeroTierOne.git" ZeroTierOne
+        
+        # 3. Ensure tcp-proxy dir exists and copy the patches from the current repo (checked out at .) into the cloned repo's tcp-proxy dir
+        mkdir -p ZeroTierOne/tcp-proxy
+        cp tcp-proxy/patchMakefile.patch ZeroTierOne/tcp-proxy/patchMakefile.patch
+        cp tcp-proxy/patchTcpProxy.patch ZeroTierOne/tcp-proxy/patchTcpProxy.patch
+        
+        # 4. Enter the directory
+        cd ZeroTierOne/tcp-proxy
+        
+        # 5. Apply patches and build
+        export VER=$(echo "1.14.2" | sed 's/\.//g')
+        patch --verbose -u tcp-proxy.cpp -i patchTcpProxy.patch
+        sed -i 's|^#include <bits/types.h>|#include <sys/types.h>|' tcp-proxy.cpp
+        
+        make -j"$(nproc)"
+
+    # ℹ️ Command-line programs to run using the OS shell.
+    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+
+    #   If the Autobuild fails above, remove it and uncomment the following three lines.
+    #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
+
+    # - run: |
+    #     echo "Run, Build Application using script"
+    #     ./location_of_script_within_repo/buildscript.sh
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:${{matrix.language}}"
