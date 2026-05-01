@@ -67,7 +67,7 @@ RUN echo "${VERSION}" > /etc/zerotier-version \
         net-tools \
         netcat-openbsd \
         procps \
-    && apk upgrade --no-cache zlib \
+    && apk upgrade --no-cache zlib nghttp2-libs \
     && rm -rf /var/cache/apk/* \
     && rm -rf /sbin/apk \
     && rm -rf /etc/apk \
