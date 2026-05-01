@@ -543,10 +543,11 @@ jobs:
         run: |
           set -euo pipefail
           tmp_dir="$(mktemp -d)"
-          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/grype.tar.gz" "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          grype_archive="grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/$grype_archive" "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/$grype_archive"
           curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/grype_checksums.txt" "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_checksums.txt"
-          (cd "$tmp_dir" && grep "grype_${GRYPE_VERSION}_linux_amd64.tar.gz$" grype_checksums.txt | sha256sum -c -)
-          tar -xzf "$tmp_dir/grype.tar.gz" -C "$tmp_dir" grype
+          (cd "$tmp_dir" && grep "$grype_archive$" grype_checksums.txt | sha256sum -c -)
+          tar -xzf "$tmp_dir/$grype_archive" -C "$tmp_dir" grype
           sudo install -m 0755 "$tmp_dir/grype" /usr/local/bin/grype
           grype version
 
@@ -565,10 +566,11 @@ jobs:
         run: |
           set -euo pipefail
           tmp_dir="$(mktemp -d)"
-          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/syft.tar.gz" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          syft_archive="syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/$syft_archive" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/$syft_archive"
           curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/syft_checksums.txt" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_checksums.txt"
-          (cd "$tmp_dir" && grep "syft_${SYFT_VERSION}_linux_amd64.tar.gz$" syft_checksums.txt | sha256sum -c -)
-          tar -xzf "$tmp_dir/syft.tar.gz" -C "$tmp_dir" syft
+          (cd "$tmp_dir" && grep "$syft_archive$" syft_checksums.txt | sha256sum -c -)
+          tar -xzf "$tmp_dir/$syft_archive" -C "$tmp_dir" syft
           sudo install -m 0755 "$tmp_dir/syft" /usr/local/bin/syft
           syft version
 
@@ -576,10 +578,17 @@ jobs:
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o cyclonedx-json > sbom.cdx.json
 
       - name: Install OSV Scanner
+        env:
+          OSV_SCANNER_VERSION: "2.3.6"
         run: |
-          OSV_SCANNER_VERSION="v2.3.6"
-          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@"$OSV_SCANNER_VERSION"
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          osv_scanner_bin="osv-scanner_linux_amd64"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/$osv_scanner_bin" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/$osv_scanner_bin"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/osv-scanner_SHA256SUMS" "https://github.com/google/osv-scanner/releases/download/v${OSV_SCANNER_VERSION}/osv-scanner_SHA256SUMS"
+          (cd "$tmp_dir" && grep "$osv_scanner_bin$" osv-scanner_SHA256SUMS | sha256sum -c -)
+          sudo install -m 0755 "$tmp_dir/$osv_scanner_bin" /usr/local/bin/osv-scanner
+          osv-scanner --version
 
       - name: Scan SBOM with OSV
         run: |
