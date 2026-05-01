@@ -538,8 +538,17 @@ jobs:
       # Grype Scan
       ######################
       - name: Install Grype
+        env:
+          GRYPE_VERSION: "0.100.0"
         run: |
-          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/grype.tar.gz" "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_linux_amd64.tar.gz"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/grype_checksums.txt" "https://github.com/anchore/grype/releases/download/v${GRYPE_VERSION}/grype_${GRYPE_VERSION}_checksums.txt"
+          (cd "$tmp_dir" && grep "grype_${GRYPE_VERSION}_linux_amd64.tar.gz$" grype_checksums.txt | sha256sum -c -)
+          tar -xzf "$tmp_dir/grype.tar.gz" -C "$tmp_dir" grype
+          sudo install -m 0755 "$tmp_dir/grype" /usr/local/bin/grype
+          grype version
 
       - name: Run Grype vulnerability scanner
         run: |
@@ -551,15 +560,25 @@ jobs:
       # OSV-Scanner for app dependencies
       ######################
       - name: Install Syft (SBOM generator)
+        env:
+          SYFT_VERSION: "1.34.2"
         run: |
-          curl --proto "=https" --tlsv1.2 -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          set -euo pipefail
+          tmp_dir="$(mktemp -d)"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/syft.tar.gz" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_linux_amd64.tar.gz"
+          curl --proto "=https" --tlsv1.2 -fsSL -o "$tmp_dir/syft_checksums.txt" "https://github.com/anchore/syft/releases/download/v${SYFT_VERSION}/syft_${SYFT_VERSION}_checksums.txt"
+          (cd "$tmp_dir" && grep "syft_${SYFT_VERSION}_linux_amd64.tar.gz$" syft_checksums.txt | sha256sum -c -)
+          tar -xzf "$tmp_dir/syft.tar.gz" -C "$tmp_dir" syft
+          sudo install -m 0755 "$tmp_dir/syft" /usr/local/bin/syft
+          syft version
 
       - name: Generate SBOM
         run: syft ${{ env.REGISTRY_IMAGE }}:latest -o cyclonedx-json > sbom.cdx.json
 
       - name: Install OSV Scanner
         run: |
-          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@latest
+          OSV_SCANNER_VERSION="v2.3.6"
+          go install github.com/google/osv-scanner/v2/cmd/osv-scanner@"$OSV_SCANNER_VERSION"
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Scan SBOM with OSV
