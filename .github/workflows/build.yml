@@ -485,7 +485,7 @@ jobs:
       # Manual Trivy Setup
       ######################
       - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.5
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.2.5
         with:
           version: 'v0.69.2'  # Use this version as suggested in https://github.com/aquasecurity/setup-trivy/issues/30
 
