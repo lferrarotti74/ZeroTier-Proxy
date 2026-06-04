@@ -308,7 +308,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
           
       - name: Set up QEMU for Multi-Arch Builds
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # v4.1.0
         with:
           platforms: all
 
@@ -485,7 +485,7 @@ jobs:
       # Manual Trivy Setup
       ######################
       - name: Setup Trivy
-        uses: aquasecurity/setup-trivy@3fb12ec12f41e471780db15c232d5dd185dcb514 # v0.2.5
+        uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.2.5
         with:
           version: 'v0.69.2'  # Use this version as suggested in https://github.com/aquasecurity/setup-trivy/issues/30
 
