@@ -49,7 +49,11 @@ LABEL org.opencontainers.image.title="zerotier-proxy" \
 
 COPY --from=stage /ZeroTierOne/tcp-proxy/tcp-proxy /usr/sbin
 
-RUN echo "${VERSION}" > /etc/zerotier-version \
+# The CACHEBUST echo forces a fresh apk index/upgrade on every build so
+# security fixes in Alpine's package repo aren't masked by a stale,
+# content-addressed Docker layer cache.
+RUN echo "Cache bust: ${CACHEBUST}" \
+    && echo "${VERSION}" > /etc/zerotier-version \
     && rm -rf /var/lib/zerotier-one \
     && apk --no-cache update \
     && apk --no-cache upgrade \
