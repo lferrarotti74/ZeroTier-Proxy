@@ -339,7 +339,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform.name }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: VERSION=${{ env.ZEROTIERPROXY_VERSION }}
+          build-args: |
+            VERSION=${{ env.ZEROTIERPROXY_VERSION }}
+            CACHEBUST=${{ github.run_id }}
           provenance: mode=max
           sbom: true
           outputs: type=image,name=${{ env.GHCR_IMAGE }},push-by-digest=true,name-canonical=true,push=true
