@@ -69,12 +69,12 @@ teardown() {
         echo "🧹 Tearing down compose project: $COMPOSE_PROJECT_NAME"
         
         # First try graceful shutdown
-        if ! docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" down --volumes --remove-orphans 2>/dev/null; then
+        if ! docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" down --volumes --remove-orphans 2>/dev/null; then
             echo "⚠️  Graceful compose down failed, trying force cleanup..."
             ((teardown_errors++))
             
             # Force remove containers if graceful shutdown failed
-            local containers=$(docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps -q 2>/dev/null || true)
+            local containers=$(docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps -q 2>/dev/null || true)
             if [[ -n "$containers" ]]; then
                 echo "  Force removing containers..."
                 docker rm -f $containers >/dev/null 2>&1 || true
@@ -133,7 +133,7 @@ services:
 EOF
 
     # Validate compose file syntax
-    run docker-compose -f "$COMPOSE_FILE" config
+    run docker compose -f "$COMPOSE_FILE" config
     [ "$status" -eq 0 ]
     
     # Should contain our service
@@ -165,7 +165,7 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start and become healthy
@@ -194,7 +194,7 @@ EOF
     fi
     
     # Check service is running
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Up" ]]
     
@@ -286,14 +286,14 @@ http {
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for services to start
     sleep 20
     
     # Check all services are running
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     
     # Count running services
@@ -342,14 +342,14 @@ networks:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for services to start
     sleep 15
     
     # Check dependency order - monitor should start after proxy
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ "$output" =~ "zerotier-proxy" ]]
     [[ "$output" =~ "monitor" ]]
@@ -392,7 +392,7 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start and become healthy
@@ -491,7 +491,7 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start
@@ -547,7 +547,7 @@ networks:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start
@@ -583,7 +583,7 @@ services:
 EOF
 
     # Deploy first service
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for first service
@@ -605,11 +605,11 @@ services:
 EOF
 
     # Try to deploy second service (should fail due to port conflict)
-    run docker-compose -f "$compose_file_2" -p "${COMPOSE_PROJECT_NAME}-2" up -d
+    run docker compose -f "$compose_file_2" -p "${COMPOSE_PROJECT_NAME}-2" up -d
     [ "$status" -ne 0 ]
     
     # First service should still be running
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Up" ]]
     
@@ -648,21 +648,21 @@ networks:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start
     sleep 15
     
     # Scale to 3 instances
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --scale zerotier-proxy=3
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d --scale zerotier-proxy=3
     [ "$status" -eq 0 ]
     
     # Wait for scaling
     sleep 15
     
     # Check number of running instances
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     
     local running_instances
@@ -692,23 +692,23 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start
     sleep 15
     
     # Check service is running
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Up" ]]
     
     # Graceful shutdown
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" down
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" down
     [ "$status" -eq 0 ]
     
     # Check services are stopped
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ ! "$output" =~ "Up" ]]
     
@@ -739,7 +739,7 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for health checks to run
@@ -786,14 +786,14 @@ services:
 EOF
 
     # Deploy with compose
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" up -d
     [ "$status" -eq 0 ]
     
     # Wait for service to start
     sleep 15
     
     # Check service is running despite resource limits
-    run docker-compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
+    run docker compose -f "$COMPOSE_FILE" -p "$COMPOSE_PROJECT_NAME" ps
     [ "$status" -eq 0 ]
     [[ "$output" =~ "Up" ]]
     
