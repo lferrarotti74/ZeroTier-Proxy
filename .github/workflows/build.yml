@@ -127,8 +127,8 @@ jobs:
           
           # Validate digest format
           if [[ ! "$NEW_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
-            echo "⚠️ Warning: Retrieved digest format seems invalid: $NEW_DIGEST"
-            echo "Skipping build due to digest retrieval error."
+            echo "⚠️ Warning: Retrieved digest format seems invalid: $NEW_DIGEST" >&2
+            echo "Skipping build due to digest retrieval error." >&2
             echo "should_build=false" >> $GITHUB_OUTPUT
             echo "update_reason=Failed to retrieve valid Alpine digest" >> $GITHUB_OUTPUT
             exit 0
@@ -362,7 +362,7 @@ jobs:
         run: |
           mkdir -p /tmp/digests
           if [ -z "${{ steps.build.outputs.digest }}" ]; then
-            echo "Error: No digest found!" && exit 1
+            echo "Error: No digest found!" >&2 && exit 1
           fi
           digest="${{ steps.build.outputs.digest }}"
           touch "/tmp/digests/${digest#sha256:}"
@@ -710,6 +710,18 @@ jobs:
         if: needs.security-scan.result == 'success'
         id: parse-security
         run: |
+          # Strip newlines and fall back to 0 when the value is not numeric
+          to_num() {
+            local cleaned
+            cleaned=$(printf '%s' "$1" | tr -d '\n\r')
+            if [[ "$cleaned" =~ ^[0-9]+$ ]]; then
+              echo "$cleaned"
+            else
+              echo "$ZERO"
+            fi
+          }
+          readonly ZERO=0
+
           # Initialize counters
           CRITICAL_CVES=0
           HIGH_CVES=0
@@ -730,10 +742,10 @@ jobs:
             LOW_CVES=$(grep -E "LOW.*CVE-[0-9]{4}-[0-9]+" ./security-reports/trivy-report.txt 2>/dev/null | wc -l || echo "0")
             
             # Ensure variables are numeric and clean
-            CRITICAL_CVES=$(echo "$CRITICAL_CVES" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-            HIGH_CVES=$(echo "$HIGH_CVES" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-            MEDIUM_CVES=$(echo "$MEDIUM_CVES" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-            LOW_CVES=$(echo "$LOW_CVES" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
+            CRITICAL_CVES=$(to_num "$CRITICAL_CVES")
+            HIGH_CVES=$(to_num "$HIGH_CVES")
+            MEDIUM_CVES=$(to_num "$MEDIUM_CVES")
+            LOW_CVES=$(to_num "$LOW_CVES")
             
             TOTAL_CVES=$((CRITICAL_CVES + HIGH_CVES + MEDIUM_CVES + LOW_CVES))
             
@@ -745,7 +757,7 @@ jobs:
             echo "📊 Parsing Trivy secret scan results..."
             # Count actual secret findings (lines that contain secret types)
             SECRET_FINDINGS=$(grep -E "(SECRET|PRIVATE_KEY|PASSWORD|TOKEN|API_KEY)" ./security-reports/trivy-secrets.txt 2>/dev/null | wc -l || echo "0")
-            SECRET_FINDINGS=$(echo "$SECRET_FINDINGS" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
+            SECRET_FINDINGS=$(to_num "$SECRET_FINDINGS")
             echo "Trivy Secret Findings: $SECRET_FINDINGS"
           fi
           
@@ -775,10 +787,10 @@ jobs:
               GRYPE_LOW=$(jq '[.matches[] | select(.vulnerability.severity == "Low")] | length' ./security-reports/grype-report.json 2>/dev/null || echo "0")
               
               # Ensure Grype variables are numeric and clean
-              GRYPE_CRITICAL=$(echo "$GRYPE_CRITICAL" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-              GRYPE_HIGH=$(echo "$GRYPE_HIGH" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-              GRYPE_MEDIUM=$(echo "$GRYPE_MEDIUM" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
-              GRYPE_LOW=$(echo "$GRYPE_LOW" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
+              GRYPE_CRITICAL=$(to_num "$GRYPE_CRITICAL")
+              GRYPE_HIGH=$(to_num "$GRYPE_HIGH")
+              GRYPE_MEDIUM=$(to_num "$GRYPE_MEDIUM")
+              GRYPE_LOW=$(to_num "$GRYPE_LOW")
               
               # Add Grype results to totals
               CRITICAL_CVES=$((CRITICAL_CVES + GRYPE_CRITICAL))
@@ -794,7 +806,7 @@ jobs:
             echo "📊 Parsing OSV scan results..."
             if command -v jq &> /dev/null; then
               OSV_VULNS=$(jq '.results[].packages[].vulnerabilities | length' ./security-reports/osv-report.json 2>/dev/null | awk '{sum += $1} END {print sum+0}' || echo "0")
-              OSV_VULNS=$(echo "$OSV_VULNS" | tr -d '\n\r' | grep -E '^[0-9]+$' || echo "0")
+              OSV_VULNS=$(to_num "$OSV_VULNS")
               echo "OSV Scanner found $OSV_VULNS vulnerabilities"
             fi
           fi
